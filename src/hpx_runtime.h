@@ -133,6 +133,7 @@ struct parallel_region {
     parallel_region( parallel_region *parent, int threads_requested ) : parallel_region(threads_requested)
     {
         depth = parent->depth + 1;
+        parent_data = parent->parent_data;
     }
     int num_threads;
     //hpx::lcos::local::condition_variable_any cond;
@@ -148,6 +149,10 @@ struct parallel_region {
     vector<void*> reduce_data;
     vector<loop_data> loop_list;
     mutex_type loop_mtx;
+#if(HPXMP_HAVE_OMPT)
+    ompt_data_t parent_data = ompt_data_none;
+    ompt_data_t parallel_data = ompt_data_none;
+#endif
 #ifdef OMP_COMPLIANT
     shared_ptr<local_priority_queue_executor> exec;
 #endif
@@ -214,11 +219,6 @@ class omp_task_data {
         bool in_taskgroup{false};
 #if(HPXMP_HAVE_OMPT)
         ompt_data_t thread_data=ompt_data_none;
-        ompt_data_t parallel_data = ompt_data_none;
-        //increase to 0 first
-        int num_task{-1};
-        //initialized outside : __kmpc_omp_task, ompt_post_init
-        vector<ompt_data_t> task_data;
 #endif
         //shared_future<void> last_df_task;
 
