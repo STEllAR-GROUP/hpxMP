@@ -116,8 +116,25 @@ int __kmpc_omp_task( ident_t *loc_ref, kmp_int32 gtid, kmp_task_t * new_task){
                 NULL, NULL,&task_data,
                 ompt_task_explicit, 0, __builtin_return_address(0));
     }
+    ompt_task_status_t status = ompt_task_others;
+    /* let OMPT know that we're about to run this task */
+    ompt_data_t* prior_task_data = &hpx_backend->get_task_data()->team->parent_data;
+    if (ompt_enabled.ompt_callback_task_schedule) {
+        ompt_callbacks.ompt_callback(ompt_callback_task_schedule)(
+                prior_task_data, status,
+                &task_data);
+    }
 #endif
     hpx_backend->create_task(new_task->routine, gtid, new_task);
+#if HPXMP_HAVE_OMPT
+    ompt_task_status_t status_fin = ompt_task_complete;
+    /* let OMPT know that we're returning to the callee task */
+    if (ompt_enabled.ompt_callback_task_schedule) {
+        ompt_callbacks.ompt_callback(ompt_callback_task_schedule)(
+                &task_data, status_fin,
+                prior_task_data);
+    }
+#endif
     return 1;
 }
 
