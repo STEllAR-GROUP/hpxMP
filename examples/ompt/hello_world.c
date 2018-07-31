@@ -8,7 +8,7 @@
 int main (int argc, char *argv[])
 {
     int nthreads;
-#pragma omp parallel num_threads(3)
+#pragma omp parallel num_threads(2)
     {
         omp_wait_id_t tid;
         tid = omp_get_thread_num();

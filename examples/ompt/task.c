@@ -3,12 +3,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
-//#include "/home/tianyi/pkgs/repo/openmp/runtime/test/ompt/callback.h"
-#include "task_schedule_callback.h"
+#include "callback.h"
 int main (int argc, char *argv[])
 {
     int nthreads;
-//#pragma omp task
     printf("This task is not in parallel regin\n");
 #pragma omp parallel num_threads(2)
     {
