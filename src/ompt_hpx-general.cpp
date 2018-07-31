@@ -178,11 +178,6 @@ void ompt_post_init() {
             memset(&ompt_enabled, 0, sizeof(ompt_enabled));
             return;
         }
-
-        if (ompt_enabled.ompt_callback_thread_begin) {
-            ompt_callbacks.ompt_callback(ompt_callback_thread_begin)(
-                    ompt_thread_initial, __ompt_get_thread_data_internal());
-        }
     }
 }
 
@@ -223,10 +218,8 @@ OMPT_API_ROUTINE uint64_t ompt_get_unique_id(void) {
     static uint64_t thread=1;
     static __thread uint64_t ID=0;
     if(ID==0) {
-        if (hpx_backend){
             uint64_t new_thread = KMP_TEST_THEN_INC64((long long *)&thread);
             ID = new_thread << (sizeof(uint64_t) * 8 - 16);
-        }
     }
     return ++ID;
 }
@@ -250,12 +243,41 @@ static ompt_interface_fn_t ompt_fn_lookup(const char *s) {
 /*****************************************************************************
  * From ompt-specific.cpp
  ****************************************************************************/
-ompt_data_t *__ompt_get_thread_data_internal() {
-    omp_task_data *omp_task= hpx_backend->get_task_data();
-    return &omp_task->thread_data;
-}
+//not correctly implemented
+//ompt_data_t *__ompt_get_thread_data_internal() {
+//    omp_task_data *omp_task= hpx_backend->get_task_data();
+//    return &omp_task->thread_data;
+//}
 
 ompt_data_t *__ompt_get_parallel_data_internal() {
     omp_task_data *omp_task= hpx_backend->get_task_data();
     return &omp_task->parallel_data;
+}
+
+/*****************************************************************************
+ * registration function
+ ***************************************************************************/
+thread_local ompt_data_t thread_data = ompt_data_none;
+
+void on_thread_start(std::size_t num, char const* name) {
+    if (ompt_enabled.enabled) {
+        //only interested in worker threads
+        if(name[0]=='w') {
+            if (ompt_enabled.ompt_callback_thread_begin) {
+                ompt_callbacks.ompt_callback(ompt_callback_thread_begin)(
+                        ompt_thread_worker, &thread_data);
+            }
+        }
+    }
+}
+
+void on_thread_stop(std::size_t num, char const* name) {
+    if (ompt_enabled.enabled) {
+        if(name[0]=='w') {
+            if (ompt_enabled.ompt_callback_thread_end) {
+                ompt_callbacks.ompt_callback(ompt_callback_thread_end)(
+                        &thread_data);
+            }
+        }
+    }
 }
