@@ -126,12 +126,20 @@ extern ompt_callbacks_active_t ompt_enabled;
 };
 #endif
 
-#endif
 
 /*****************************************************************************
  * types from ompt-specific.h
  ***************************************************************************/
 typedef omp_task_data ompt_thread_t;
 extern boost::shared_ptr<hpx_runtime> hpx_backend;
-ompt_data_t *__ompt_get_thread_data_internal();
+//not correctly implemented
+//ompt_data_t *__ompt_get_thread_data_internal();
 ompt_data_t *__ompt_get_parallel_data_internal();
+
+/*****************************************************************************
+ * registration function
+ ***************************************************************************/
+extern thread_local ompt_data_t thread_data;
+void on_thread_start(std::size_t num, char const* name);
+void on_thread_stop(std::size_t num, char const* name);
+#endif
