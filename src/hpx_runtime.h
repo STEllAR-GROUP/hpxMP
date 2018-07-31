@@ -133,6 +133,7 @@ struct parallel_region {
     parallel_region( parallel_region *parent, int threads_requested ) : parallel_region(threads_requested)
     {
         depth = parent->depth + 1;
+        //needed in task_schedule, actually should be called parent_task_data
         parent_data = parent->parent_data;
     }
     int num_threads;

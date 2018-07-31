@@ -539,8 +539,28 @@ void thread_setup( invoke_func kmp_invoke, microtask_t thread_func,
             }
         }
 #endif
-        kmp_invoke(thread_func, tid, tid, argc, argv);
+#if HPXMP_HAVE_OMPT
+    ompt_data_t implicit_task_data = ompt_data_none;
+    // get parallel id from parent task data;
+    ompt_data_t parallel_data = parent->team->parallel_data;
+    if (ompt_enabled.enabled) {
+        if (ompt_enabled.ompt_callback_implicit_task) {
+            ompt_callbacks.ompt_callback(ompt_callback_implicit_task)(
+                    ompt_scope_begin, &parallel_data, &implicit_task_data, 0,
+                    0);
+        }
     }
+    kmp_invoke(thread_func, tid, tid, argc, argv);
+
+    if (ompt_enabled.enabled) {
+        if (ompt_enabled.ompt_callback_implicit_task) {
+            ompt_callbacks.ompt_callback(ompt_callback_implicit_task)(
+                    ompt_scope_end, NULL, &implicit_task_data, 0,
+                    0);
+        }
+    }
+}
+#endif
     int count = 0;
     int max_count = 10;
     while (*(task_data.num_child_tasks) > 0 ) {

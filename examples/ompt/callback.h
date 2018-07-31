@@ -18,9 +18,56 @@ static const char* ompt_thread_type_t_values[] = {
         "ompt_thread_other"
 };
 
+static void format_task_type(int type, char *buffer) {
+    char *progress = buffer;
+    if (type & ompt_task_initial)
+        progress += sprintf(progress, "ompt_task_initial");
+    if (type & ompt_task_implicit)
+        progress += sprintf(progress, "ompt_task_implicit");
+    if (type & ompt_task_explicit)
+        progress += sprintf(progress, "ompt_task_explicit");
+    if (type & ompt_task_target)
+        progress += sprintf(progress, "ompt_task_target");
+    if (type & ompt_task_undeferred)
+        progress += sprintf(progress, "|ompt_task_undeferred");
+    if (type & ompt_task_untied)
+        progress += sprintf(progress, "|ompt_task_untied");
+    if (type & ompt_task_final)
+        progress += sprintf(progress, "|ompt_task_final");
+    if (type & ompt_task_mergeable)
+        progress += sprintf(progress, "|ompt_task_mergeable");
+    if (type & ompt_task_merged)
+        progress += sprintf(progress, "|ompt_task_merged");
+}
+
+static const char* ompt_task_status_t_values[] = {
+        NULL,
+        "ompt_task_complete",
+        "ompt_task_yield",
+        "ompt_task_cancel",
+        "ompt_task_others"
+};
 
 static ompt_set_callback_t ompt_set_callback;
 static ompt_get_unique_id_t ompt_get_unique_id;
+
+static void
+on_ompt_callback_thread_begin(
+        ompt_thread_type_t thread_type,
+        ompt_data_t *thread_data)
+{
+    if(thread_data->ptr)
+        printf("%s\n", "0: thread_data initially not null");
+    thread_data->value = ompt_get_unique_id();
+    printf("ompt_event_thread_begin: thread_type=%s=%d, thread_id=%" PRIu64 "\n", ompt_thread_type_t_values[thread_type], thread_type, thread_data->value);
+}
+
+static void
+on_ompt_callback_thread_end(
+        ompt_data_t *thread_data)
+{
+    printf("ompt_event_thread_end: thread_id=%" PRIu64 "\n", thread_data->value);
+}
 
 static void
 on_ompt_callback_parallel_begin(
@@ -48,23 +95,58 @@ on_ompt_callback_parallel_end(
 }
 
 static void
-on_ompt_callback_thread_begin(
-        ompt_thread_type_t thread_type,
-        ompt_data_t *thread_data)
+on_ompt_callback_task_create(
+        ompt_data_t *encountering_task_data,
+        const omp_frame_t *encountering_task_frame,
+        ompt_data_t* new_task_data,
+        int type,
+        int has_dependences,
+        const void *codeptr_ra)
 {
-    if(thread_data->ptr)
-        printf("%s\n", "0: thread_data initially not null");
-    thread_data->value = ompt_get_unique_id();
-    printf("ompt_event_thread_begin: thread_type=%s=%d, thread_id=%" PRIu64 "\n", ompt_thread_type_t_values[thread_type], thread_type, thread_data->value);
+    if(new_task_data->ptr)
+        printf("0: new_task_data initially not null\n");
+    new_task_data->value = ompt_get_unique_id();
+    char buffer[2048];
+
+    format_task_type(type, buffer);
+
+    printf("ompt_event_task_create: new_task_id=%" PRIu64 ", codeptr_ra=%p, task_type=%s=%d\n", new_task_data->value, codeptr_ra, buffer, type);
 }
 
 static void
-on_ompt_callback_thread_end(
-        ompt_data_t *thread_data)
+on_ompt_callback_task_schedule(
+        ompt_data_t *first_task_data,
+        ompt_task_status_t prior_task_status,
+        ompt_data_t *second_task_data)
 {
-    printf("ompt_event_thread_end: thread_id=%" PRIu64 "\n", thread_data->value);
+    printf("ompt_event_task_schedule: first_task_id=%" PRIu64 ", second_task_id=%" PRIu64 ", prior_task_status=%s=%d\n", first_task_data->value, second_task_data->value, ompt_task_status_t_values[prior_task_status], prior_task_status);
+    if(prior_task_status == ompt_task_complete)
+    {
+        printf("ompt_event_task_end: task_id=%" PRIu64 "\n", first_task_data->value);
+    }
 }
 
+static void
+on_ompt_callback_implicit_task(
+        ompt_scope_endpoint_t endpoint,
+        ompt_data_t *parallel_data,
+        ompt_data_t *task_data,
+        unsigned int team_size,
+        unsigned int thread_num)
+{
+    switch(endpoint)
+    {
+        case ompt_scope_begin:
+            if(task_data->ptr)
+                printf("%s\n", "0: task_data initially not null");
+            task_data->value = ompt_get_unique_id();
+            printf("ompt_event_implicit_task_begin: parallel_id=%" PRIu64 ", task_id=%" PRIu64 "\n", parallel_data->value, task_data->value);
+            break;
+        case ompt_scope_end:
+            printf("ompt_event_implicit_task_end: parallel_id=%" PRIu64 ", task_id=%" PRIu64 "\n", (parallel_data)?parallel_data->value:0, task_data->value);
+            break;
+    }
+}
 
 #define register_callback_t(name, type)                       \
               do{                                                           \
@@ -83,11 +165,14 @@ int ompt_initialize(
     ompt_set_callback = (ompt_set_callback_t) lookup("ompt_set_callback");
     ompt_get_unique_id = (ompt_get_unique_id_t) lookup("ompt_get_unique_id");
 
-    register_callback(ompt_callback_parallel_begin);
-    register_callback(ompt_callback_parallel_end);
-
     register_callback(ompt_callback_thread_begin);
     register_callback(ompt_callback_thread_end);
+    register_callback(ompt_callback_parallel_begin);
+    register_callback(ompt_callback_parallel_end);
+    register_callback(ompt_callback_task_create);
+    register_callback(ompt_callback_task_schedule);
+    register_callback(ompt_callback_implicit_task);
+
 
     printf("0: NULL_POINTER=%p\n", (void*)NULL);
     return 1; //success
