@@ -41,12 +41,6 @@ void fini_runtime()
 {
     cout << "Stopping HPX OpenMP runtime" << endl;
     //this should only be done if this runtime started hpx
-#if HPXMP_HAVE_OMPT
-    if (ompt_enabled.ompt_callback_thread_end) {
-        ompt_callbacks.ompt_callback(ompt_callback_thread_end)(
-                __ompt_get_thread_data_internal());
-    }
-#endif
     hpx::get_runtime().stop();
     cout << "Stopped" << endl;
 }
@@ -532,14 +526,6 @@ void thread_setup( invoke_func kmp_invoke, microtask_t thread_func,
         thread_func(&tid, &tid);
     } else {
 #if HPXMP_HAVE_OMPT
-        if (ompt_enabled.enabled) {
-            if (ompt_enabled.ompt_callback_thread_begin) {
-                ompt_callbacks.ompt_callback(ompt_callback_thread_begin)(
-                        ompt_thread_worker, __ompt_get_thread_data_internal());
-            }
-        }
-#endif
-#if HPXMP_HAVE_OMPT
     ompt_data_t implicit_task_data = ompt_data_none;
     // get parallel id from parent task data;
     ompt_data_t parallel_data = parent->team->parallel_data;
@@ -585,11 +571,6 @@ void thread_setup( invoke_func kmp_invoke, microtask_t thread_func,
         //std::unique_lock<mutex_type> lk(barrier_mtx);
         cond.notify_all();
     }
-#if HPXMP_HAVE_OMPT
-    if (ompt_enabled.ompt_callback_thread_end) {
-        ompt_callbacks.ompt_callback(ompt_callback_thread_end)(__ompt_get_thread_data_internal());
-    }
-#endif
 }
 
 // This is the only place where get_thread can't be called, since

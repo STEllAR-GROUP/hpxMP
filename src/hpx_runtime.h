@@ -218,9 +218,6 @@ class omp_task_data {
         int single_counter{0};
         int loop_num{0};
         bool in_taskgroup{false};
-#if(HPXMP_HAVE_OMPT)
-        ompt_data_t thread_data=ompt_data_none;
-#endif
         //shared_future<void> last_df_task;
 
 #ifdef OMP_COMPLIANT
