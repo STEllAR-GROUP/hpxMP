@@ -295,12 +295,12 @@ int __kmpc_global_thread_num(ident_t *loc){
         std::cout<<"__kmpc_global_thread_num"<<std::endl;
     #endif
 #if HPXMP_HAVE_OMPT
-        ompt_pre_init();
+    ompt_pre_init();
+    ompt_post_init();
+    hpx::register_thread_on_start_func(&on_thread_start);
+    hpx::register_thread_on_stop_func(&on_thread_stop);
 #endif
     start_backend();
-#if HPXMP_HAVE_OMPT
-    ompt_post_init();
-#endif
     if(hpx_backend)
         return hpx_backend->get_thread_num();
     return 0;
