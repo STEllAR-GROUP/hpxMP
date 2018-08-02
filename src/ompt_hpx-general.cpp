@@ -184,6 +184,10 @@ void ompt_post_init() {
                     NULL, NULL, &task_data, ompt_task_initial, 0, NULL);
         }
     }
+    
+    //hook callback into hpx
+    hpx::register_thread_on_start_func(&on_thread_start);
+    hpx::register_thread_on_stop_func(&on_thread_stop);
 }
 
 /*****************************************************************************

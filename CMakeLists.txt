@@ -80,3 +80,6 @@ else()
 endif()
 
 add_subdirectory(examples/ompt)
+add_subdirectory(tests/ompt)
+
+enable_testing()

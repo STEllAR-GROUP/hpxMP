@@ -1,5 +1,5 @@
 if(HPXMP_WITH_OMPT)
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c11 -fopenmp")
     add_executable(hello_world hello_world.c)
-    add_executable(task task.c)
+    add_executable(task_ex task_ex.c)
 endif()

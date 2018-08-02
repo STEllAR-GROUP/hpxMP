@@ -528,7 +528,7 @@ void thread_setup( invoke_func kmp_invoke, microtask_t thread_func,
 #if HPXMP_HAVE_OMPT
     ompt_data_t implicit_task_data = ompt_data_none;
     // get parallel id from parent task data;
-    ompt_data_t parallel_data = parent->team->parallel_data;
+    ompt_data_t parallel_data = team->parallel_data;
     if (ompt_enabled.enabled) {
         if (ompt_enabled.ompt_callback_implicit_task) {
             ompt_callbacks.ompt_callback(ompt_callback_implicit_task)(
@@ -581,6 +581,19 @@ void fork_worker( invoke_func kmp_invoke, microtask_t thread_func,
 {
     parallel_region team(parent->team, parent->threads_requested);
 
+#if HPXMP_HAVE_OMPT
+    //TODO:HOW TO FIND OUT INVOKER
+    ompt_invoker_t a = ompt_invoker_runtime;
+    if (ompt_enabled.enabled) {
+        if (ompt_enabled.ompt_callback_parallel_begin) {
+            int team_size = parent->threads_requested;
+            ompt_callbacks.ompt_callback(ompt_callback_parallel_begin)(
+                    NULL, NULL,&team.parallel_data, team_size,
+                    a,__builtin_return_address(0));
+        }
+    }
+#endif
+
 #ifdef OMP_COMPLIANT
     team.exec.reset(new local_priority_queue_executor(parent->threads_requested));
 #endif
@@ -625,6 +638,14 @@ void fork_worker( invoke_func kmp_invoke, microtask_t thread_func,
         count++;
     }
 #endif
+
+#if HPXMP_HAVE_OMPT
+    if (ompt_enabled.ompt_callback_parallel_end) {
+        ompt_callbacks.ompt_callback(ompt_callback_parallel_end)(
+                &team.parallel_data,NULL,a,
+                __builtin_return_address(0));
+    }
+#endif
 }
 
 void fork_and_sync( invoke_func kmp_invoke, microtask_t thread_func,
@@ -645,18 +666,7 @@ void fork_and_sync( invoke_func kmp_invoke, microtask_t thread_func,
 void hpx_runtime::fork(invoke_func kmp_invoke, microtask_t thread_func, int argc, void** argv)
 {
     omp_task_data *current_task = get_task_data();
-#if HPXMP_HAVE_OMPT
-    //TODO:HOW TO FIND OUT INVOKER
-    ompt_invoker_t a = ompt_invoker_runtime;
-    if (ompt_enabled.enabled) {
-        if (ompt_enabled.ompt_callback_parallel_begin) {
-            int team_size = current_task->threads_requested;
-            ompt_callbacks.ompt_callback(ompt_callback_parallel_begin)(
-                    NULL, NULL,__ompt_get_parallel_data_internal(), team_size,
-                    a,__builtin_return_address(0));
-        }
-    }
-#endif
+
     if( hpx::threads::get_self_ptr() ) {
         fork_worker(kmp_invoke, thread_func, argc, argv, current_task);
     } else {
@@ -675,12 +685,5 @@ void hpx_runtime::fork(invoke_func kmp_invoke, microtask_t thread_func, int argc
         }
     }
     current_task->set_threads_requested(current_task->icv.nthreads );
-#if HPXMP_HAVE_OMPT
-        if (ompt_enabled.ompt_callback_parallel_end) {
-            ompt_callbacks.ompt_callback(ompt_callback_parallel_end)(
-                    __ompt_get_parallel_data_internal(),NULL,a,
-                    __builtin_return_address(0));
-        }
-#endif
 }
 
