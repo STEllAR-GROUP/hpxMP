@@ -1,5 +1,6 @@
 //  Copyright (c) 2013 Jeremy Kemp
 //  Copyright (c) 2013 Bryce Adelstein-Lelbach
+//  Copyright (c) 2018 Tianyi Zhang
 //
 //  Distributed under the Boost Software License, Version 1.0. (See accompanying
 //  file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
@@ -150,7 +151,7 @@ struct parallel_region {
     vector<void*> reduce_data;
     vector<loop_data> loop_list;
     mutex_type loop_mtx;
-#if(HPXMP_HAVE_OMPT)
+#if (HPXMP_HAVE_OMPT)
     ompt_data_t parent_data = ompt_data_none;
     ompt_data_t parallel_data = ompt_data_none;
 #endif
