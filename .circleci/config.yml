@@ -23,14 +23,14 @@ jobs:
             # CMake
             - run:
                 name: Run CMake
-                command: cmake -H. -Bbuild -DHPX_DIR=/usr/local/lib/cmake/HPX -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_C_COMPILER=clang -DHPXMP_WITH_OMPT=On
+                command: cmake -H. -Bbuild -DHPX_DIR=/usr/local/lib/cmake/HPX -DCMAKE_BUILD_TYPE=Debug -DHPXMP_WITH_OMPT=On
             # Build all targets
             - run:
                 name: Build all targets
                 command: cmake --build build -- -j2
             # Run all tests
             - run:
-                name: Build all targets
+                name: Run all the tests
                 command: cmake --build build -- -j2 test
 
 ################################################################################
