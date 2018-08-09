@@ -1,11 +1,11 @@
-#Copyright (c) 2018 Tianyi Zhang
+# Copyright (c) 2018 Tianyi Zhang
 #
-#Distributed under the Boost Software License, Version 1.0. (See accompanying
-#file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
+# Distributed under the Boost Software License, Version 1.0. (See accompanying
+# file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
 if(HPXMP_WITH_OMPT)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fopenmp")
-    add_executable(thread_begin_end thread_begin_end.cpp)
+    #add_executable(thread_begin_end thread_begin_end.cpp)
     add_executable(parallel parallel.cpp)
     add_executable(parallel_nested parallel_nested.cpp)
     add_executable(par_for par_for.cpp)
@@ -15,12 +15,20 @@ if(HPXMP_WITH_OMPT)
     add_executable(task_fp task_fp.cpp)
     add_executable(task_implicit_simple task_implicit_simple.cpp)
     enable_testing()
+
     macro(do_test name)
         add_test(${name} ${name})
-        set_tests_properties(${name}
-                PROPERTIES PASS_REGULAR_EXPRESSION "pass"
-                ENVIRONMENT LD_PRELOAD=${PROJECT_BINARY_DIR}/libhpxmp.so)
+        set_target_properties(${name} PROPERTIES
+            CXX_STANDARD 11
+            CXX_STANDARD_REQUIRED ON
+            CXX_EXTENSIONS OFF
+        )
+        set_tests_properties(${name} PROPERTIES
+            PASS_REGULAR_EXPRESSION "pass" ENVIRONMENT
+                LD_PRELOAD=${PROJECT_BINARY_DIR}/libhpxmp.so
+        )
     endmacro(do_test)
+
     do_test(parallel)
     do_test(parallel_nested)
     do_test(par_for)
