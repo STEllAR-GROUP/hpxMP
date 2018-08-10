@@ -12,7 +12,7 @@
 int main(int argc, char* argv[])
 {
     int nthreads;
-    printf("This task is not in parallel regin\n");
+    printf("This task is not in parallel region\n");
 #pragma omp parallel num_threads(2)
     {
 #pragma omp single
