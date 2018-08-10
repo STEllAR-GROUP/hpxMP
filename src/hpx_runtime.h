@@ -135,7 +135,9 @@ struct parallel_region {
     {
         depth = parent->depth + 1;
         //needed in task_schedule, actually should be called parent_task_data
+#if (HPXMP_HAVE_OMPT)
         parent_data = parent->parent_data;
+#endif
     }
     int num_threads;
     //hpx::lcos::local::condition_variable_any cond;

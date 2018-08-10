@@ -537,8 +537,11 @@ void thread_setup( invoke_func kmp_invoke, microtask_t thread_func,
                     0);
         }
     }
+#endif
+
     kmp_invoke(thread_func, tid, tid, argc, argv);
 
+#if HPXMP_HAVE_OMPT
     if (ompt_enabled.enabled) {
         if (ompt_enabled.ompt_callback_implicit_task) {
             ompt_callbacks.ompt_callback(ompt_callback_implicit_task)(
@@ -546,8 +549,8 @@ void thread_setup( invoke_func kmp_invoke, microtask_t thread_func,
                     0);
         }
     }
-}
 #endif
+}
     int count = 0;
     int max_count = 10;
     while (*(task_data.num_child_tasks) > 0 ) {
