@@ -7,9 +7,32 @@
 #define HPXMP_CALLBACK_HPP
 
 #include <inttypes.h>
+#include <iostream>
+#include <map>
+#include <mutex>
 #include <omp.h>
 #include <stdio.h>
 #include "../../src/ompt.h"
+
+int count_registrations = 0;
+int count_deregistrations = 0;
+
+int count_parallel_begin = 0;
+int count_parallel_end = 0;
+int count_task_create = 0;
+int count_task_complete = 0;
+int count_implicit_task_create = 0;
+int count_implicit_task_end = 0;
+
+std::map<uint64_t, int> count_parallel_id;
+std::map<uint64_t, int> team_size;
+std::map<int, int> task_type;
+std::map<const void*, int> return_address;
+std::map<uint64_t, int> count_task_id;
+std::map<uint64_t, int> count_task_schedule_id;
+std::map<uint64_t, int> count_implicit_task_id;
+
+std::mutex global_mutex;
 
 static const char* ompt_thread_type_t_values[] = {
     NULL, "ompt_thread_initial", "ompt_thread_worker", "ompt_thread_other"};
@@ -46,6 +69,9 @@ static ompt_get_unique_id_t ompt_get_unique_id;
 static void on_ompt_callback_thread_begin(ompt_thread_type_t thread_type,
     ompt_data_t* thread_data)
 {
+    global_mutex.lock();
+    count_registrations++;
+    global_mutex.unlock();
     if (thread_data->ptr)
         printf("%s\n", "0: thread_data initially not null");
     thread_data->value = ompt_get_unique_id();
@@ -58,6 +84,9 @@ static void on_ompt_callback_thread_begin(ompt_thread_type_t thread_type,
 
 static void on_ompt_callback_thread_end(ompt_data_t* thread_data)
 {
+    global_mutex.lock();
+    count_deregistrations++;
+    global_mutex.unlock();
     printf(
         "ompt_event_thread_end: thread_id=%" PRIu64 "\n", thread_data->value);
 }
@@ -72,6 +101,13 @@ static void on_ompt_callback_parallel_begin(ompt_data_t* encountering_task_data,
     if (parallel_data->ptr)
         printf("0: parallel_data initially not null\n");
     parallel_data->value = ompt_get_unique_id();
+
+    global_mutex.lock();
+    count_parallel_begin++;
+    count_parallel_id[parallel_data->value] = 1;
+    global_mutex.unlock();
+
+    team_size[parallel_data->value] = requested_team_size;
     printf("ompt_event_parallel_begin: parallel_id=%" PRIu64
            ", requested_team_size=%" PRIu32 ",codeptr_ra=%p, invoker=%d\n",
         parallel_data->value,
@@ -85,6 +121,10 @@ static void on_ompt_callback_parallel_end(ompt_data_t* parallel_data,
     ompt_invoker_t invoker,
     const void* codeptr_ra)
 {
+    global_mutex.lock();
+    count_parallel_end++;
+    count_parallel_id[parallel_data->value]--;
+    global_mutex.unlock();
     printf("ompt_event_parallel_end: parallel_id=%" PRIu64
            ", codeptr_ra=%p, invoker=%d\n",
         parallel_data->value,
@@ -102,6 +142,16 @@ static void on_ompt_callback_task_create(ompt_data_t* encountering_task_data,
     if (new_task_data->ptr)
         printf("0: new_task_data initially not null\n");
     new_task_data->value = ompt_get_unique_id();
+
+    global_mutex.lock();
+    count_task_create++;
+    task_type[type]++;
+    return_address[codeptr_ra]++;
+    //initial task does not have task_end callback
+    if (type != 1)
+        count_task_id[new_task_data->value] = 1;
+    global_mutex.unlock();
+
     char buffer[2048];
 
     format_task_type(type, buffer);
@@ -124,10 +174,19 @@ static void on_ompt_callback_task_schedule(ompt_data_t* first_task_data,
         second_task_data->value,
         ompt_task_status_t_values[prior_task_status],
         prior_task_status);
+    global_mutex.lock();
+    count_task_schedule_id[first_task_data->value]++;
+    count_task_schedule_id[second_task_data->value]--;
+    global_mutex.unlock();
+
     if (prior_task_status == ompt_task_complete)
     {
         printf("ompt_event_task_end: task_id=%" PRIu64 "\n",
             first_task_data->value);
+        global_mutex.lock();
+        count_task_complete++;
+        count_task_id[first_task_data->value]--;
+        global_mutex.unlock();
     }
 }
 
@@ -143,12 +202,20 @@ static void on_ompt_callback_implicit_task(ompt_scope_endpoint_t endpoint,
         if (task_data->ptr)
             printf("%s\n", "0: task_data initially not null");
         task_data->value = ompt_get_unique_id();
+        global_mutex.lock();
+        count_implicit_task_create++;
+        count_implicit_task_id[task_data->value]++;
+        global_mutex.unlock();
         printf("ompt_event_implicit_task_begin: parallel_id=%" PRIu64
                ", task_id=%" PRIu64 "\n",
             parallel_data->value,
             task_data->value);
         break;
     case ompt_scope_end:
+        global_mutex.lock();
+        count_implicit_task_end++;
+        count_implicit_task_id[task_data->value]--;
+        global_mutex.unlock();
         printf("ompt_event_implicit_task_end: parallel_id=%" PRIu64
                ", task_id=%" PRIu64 "\n",
             (parallel_data) ? parallel_data->value : 0,
@@ -173,8 +240,8 @@ int ompt_initialize(ompt_function_lookup_t lookup, ompt_data_t* tool_data)
     ompt_set_callback = (ompt_set_callback_t) lookup("ompt_set_callback");
     ompt_get_unique_id = (ompt_get_unique_id_t) lookup("ompt_get_unique_id");
 
-    register_callback(ompt_callback_thread_begin);
-    register_callback(ompt_callback_thread_end);
+    //    register_callback(ompt_callback_thread_begin);
+    //    register_callback(ompt_callback_thread_end);
     register_callback(ompt_callback_parallel_begin);
     register_callback(ompt_callback_parallel_end);
     register_callback(ompt_callback_task_create);
@@ -197,6 +264,50 @@ ompt_start_tool_result_t* ompt_start_tool(unsigned int omp_version,
     static ompt_start_tool_result_t ompt_start_tool_result = {
         &ompt_initialize, &ompt_finalize, 0};
     return &ompt_start_tool_result;
+}
+
+int do_generic_test()
+{
+    // parallel: begin = end
+    if (count_parallel_begin != count_parallel_end)
+    {
+        return 1;
+    }
+
+    // parallel: check registered parallel id will be unregistered
+    for (auto it = count_parallel_id.begin(); it != count_parallel_id.end();
+         ++it)
+    {
+        if (it->second != 0)
+            return 1;
+    }
+
+    // task: check if task id matches
+    for (auto it = count_task_id.begin(); it != count_task_id.end(); ++it)
+    {
+        if (it->second != 0)
+            return 1;
+    }
+
+    // task: check if task schedule id matches
+    for (auto it = count_task_schedule_id.begin();
+         it != count_task_schedule_id.end();
+         ++it)
+    {
+        if (it->second != 0)
+            return 1;
+    }
+
+    //implicit_task : check if implicit task id matches
+    for (auto it = count_implicit_task_id.begin();
+         it != count_implicit_task_id.end();
+         ++it)
+    {
+        if (it->second != 0)
+            return 1;
+    }
+
+    return 0;
 }
 
 #endif    //HPXMP_CALLBACK_HPP

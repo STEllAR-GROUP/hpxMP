@@ -1,5 +1,6 @@
 //  Copyright (c) 2013 Jeremy Kemp
 //  Copyright (c) 2013 Bryce Adelstein-Lelbach
+//  Copyright (c) 2018 Tianyi Zhang
 //
 //  Distributed under the Boost Software License, Version 1.0. (See accompanying
 //  file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
@@ -133,6 +134,10 @@ struct parallel_region {
     parallel_region( parallel_region *parent, int threads_requested ) : parallel_region(threads_requested)
     {
         depth = parent->depth + 1;
+        //needed in task_schedule, actually should be called parent_task_data
+#if (HPXMP_HAVE_OMPT)
+        parent_data = parent->parent_data;
+#endif
     }
     int num_threads;
     //hpx::lcos::local::condition_variable_any cond;
@@ -148,6 +153,10 @@ struct parallel_region {
     vector<void*> reduce_data;
     vector<loop_data> loop_list;
     mutex_type loop_mtx;
+#if (HPXMP_HAVE_OMPT)
+    ompt_data_t parent_data = ompt_data_none;
+    ompt_data_t parallel_data = ompt_data_none;
+#endif
 #ifdef OMP_COMPLIANT
     shared_ptr<local_priority_queue_executor> exec;
 #endif
@@ -212,10 +221,6 @@ class omp_task_data {
         int single_counter{0};
         int loop_num{0};
         bool in_taskgroup{false};
-#if(HPXMP_HAVE_OMPT)
-        ompt_data_t thread_data=ompt_data_none;
-        ompt_data_t parallel_data = ompt_data_none;
-#endif
         //shared_future<void> last_df_task;
 
 #ifdef OMP_COMPLIANT

@@ -58,6 +58,10 @@ __kmpc_fork_call(ident_t *loc, kmp_int32 argc, kmpc_micro microtask, ...) {
     #if defined DEBUG && defined HPXMP_HAVE_TRACE
         std::cout<<"__kmpc_fork_call"<<std::endl;
     #endif
+#if HPXMP_HAVE_OMPT
+    ompt_pre_init();
+    ompt_post_init();
+#endif
     start_backend();
     vector<void*> argv(argc);
     start_backend();
@@ -109,7 +113,32 @@ int __kmpc_omp_task( ident_t *loc_ref, kmp_int32 gtid, kmp_task_t * new_task){
         std::cout<<"__kmpc_omp_task"<<std::endl;
     #endif
     start_backend();
+#if HPXMP_HAVE_OMPT
+    ompt_data_t task_data = ompt_data_none;
+    if (ompt_enabled.ompt_callback_task_create) {
+        ompt_callbacks.ompt_callback(ompt_callback_task_create)(
+                NULL, NULL,&task_data,
+                ompt_task_explicit, 0, __builtin_return_address(0));
+    }
+    ompt_task_status_t status = ompt_task_others;
+    /* let OMPT know that we're about to run this task */
+    ompt_data_t* prior_task_data = &hpx_backend->get_task_data()->team->parent_data;
+    if (ompt_enabled.ompt_callback_task_schedule) {
+        ompt_callbacks.ompt_callback(ompt_callback_task_schedule)(
+                prior_task_data, status,
+                &task_data);
+    }
+#endif
     hpx_backend->create_task(new_task->routine, gtid, new_task);
+#if HPXMP_HAVE_OMPT
+    ompt_task_status_t status_fin = ompt_task_complete;
+    /* let OMPT know that we're returning to the callee task */
+    if (ompt_enabled.ompt_callback_task_schedule) {
+        ompt_callbacks.ompt_callback(ompt_callback_task_schedule)(
+                &task_data, status_fin,
+                prior_task_data);
+    }
+#endif
     return 1;
 }
 
@@ -123,6 +152,23 @@ __kmpc_omp_task_with_deps( ident_t *loc_ref, kmp_int32 gtid, kmp_task_t * new_ta
     #endif
     start_backend();
 
+#if HPXMP_HAVE_OMPT
+    ompt_data_t task_data = ompt_data_none;
+    if (ompt_enabled.ompt_callback_task_create) {
+        ompt_callbacks.ompt_callback(ompt_callback_task_create)(
+                NULL, NULL,&task_data,
+                ompt_task_explicit, 0, __builtin_return_address(0));
+    }
+    ompt_task_status_t status = ompt_task_others;
+    /* let OMPT know that we're about to run this task */
+    ompt_data_t* prior_task_data = &hpx_backend->get_task_data()->team->parent_data;
+    if (ompt_enabled.ompt_callback_task_schedule) {
+        ompt_callbacks.ompt_callback(ompt_callback_task_schedule)(
+                prior_task_data, status,
+                &task_data);
+    }
+#endif
+
     if(ndeps == 0 && ndeps_noalias == 0) {
         //TODO:how to I handle immediate tasks, read them from flags?
         hpx_backend->create_task(new_task->routine, gtid, new_task);
@@ -134,6 +180,17 @@ __kmpc_omp_task_with_deps( ident_t *loc_ref, kmp_int32 gtid, kmp_task_t * new_ta
                                      ndeps_noalias, noalias_dep_list);
 #endif
     }
+
+#if HPXMP_HAVE_OMPT
+    ompt_task_status_t status_fin = ompt_task_complete;
+    /* let OMPT know that we're returning to the callee task */
+    if (ompt_enabled.ompt_callback_task_schedule) {
+        ompt_callbacks.ompt_callback(ompt_callback_task_schedule)(
+                &task_data, status_fin,
+                prior_task_data);
+    }
+#endif
+
     return 1;
 }
 
@@ -270,12 +327,10 @@ int __kmpc_global_thread_num(ident_t *loc){
         std::cout<<"__kmpc_global_thread_num"<<std::endl;
     #endif
 #if HPXMP_HAVE_OMPT
-        ompt_pre_init();
-#endif
-    start_backend();
-#if HPXMP_HAVE_OMPT
+    ompt_pre_init();
     ompt_post_init();
 #endif
+    start_backend();
     if(hpx_backend)
         return hpx_backend->get_thread_num();
     return 0;

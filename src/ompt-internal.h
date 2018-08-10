@@ -14,77 +14,83 @@
 #ifndef __OMPT_INTERNAL_H__
 #define __OMPT_INTERNAL_H__
 
+#include "hpx_runtime.h"
 #include "ompt-event-specific.h"
 #include "ompt.h"
-#include "hpx_runtime.h"
 
 #define OMPT_VERSION 1
 
 #define _OMP_EXTERN extern "C"
 
 #define OMPT_INVOKER(x)                                                        \
-  ((x == fork_context_gnu) ? ompt_invoker_program : ompt_invoker_runtime)
+    ((x == fork_context_gnu) ? ompt_invoker_program : ompt_invoker_runtime)
 
 #define ompt_callback(e) e##_callback
 
-typedef struct ompt_callbacks_internal_s {
+typedef struct ompt_callbacks_internal_s
+{
 #define ompt_event_macro(event, callback, eventid)                             \
-  callback ompt_callback(event);
+    callback ompt_callback(event);
 
-  FOREACH_OMPT_EVENT(ompt_event_macro)
+    FOREACH_OMPT_EVENT(ompt_event_macro)
 
 #undef ompt_event_macro
 } ompt_callbacks_internal_t;
 
-typedef struct ompt_callbacks_active_s {
-  unsigned int enabled : 1;
+typedef struct ompt_callbacks_active_s
+{
+    unsigned int enabled : 1;
 #define ompt_event_macro(event, callback, eventid) unsigned int event : 1;
 
-  FOREACH_OMPT_EVENT(ompt_event_macro)
+    FOREACH_OMPT_EVENT(ompt_event_macro)
 
 #undef ompt_event_macro
 } ompt_callbacks_active_t;
 
 #define TASK_TYPE_DETAILS_FORMAT(info)                                         \
-  ((info->td_flags.task_serial || info->td_flags.tasking_ser)                  \
-       ? ompt_task_undeferred                                                  \
-       : 0x0) |                                                                \
-      ((!(info->td_flags.tiedness)) ? ompt_task_untied : 0x0) |                \
-      (info->td_flags.final ? ompt_task_final : 0x0) |                         \
-      (info->td_flags.merged_if0 ? ompt_task_mergeable : 0x0)
+    ((info->td_flags.task_serial || info->td_flags.tasking_ser) ?              \
+            ompt_task_undeferred :                                             \
+            0x0) |                                                             \
+        ((!(info->td_flags.tiedness)) ? ompt_task_untied : 0x0) |              \
+        (info->td_flags.final ? ompt_task_final : 0x0) |                       \
+        (info->td_flags.merged_if0 ? ompt_task_mergeable : 0x0)
 
-typedef struct {
-  omp_frame_t frame;
-  ompt_data_t task_data;
-  struct kmp_taskdata *scheduling_parent;
-  int thread_num;
+typedef struct
+{
+    omp_frame_t frame;
+    ompt_data_t task_data;
+    struct kmp_taskdata* scheduling_parent;
+    int thread_num;
 #if OMP_40_ENABLED
-  int ndeps;
-  ompt_task_dependence_t *deps;
+    int ndeps;
+    ompt_task_dependence_t* deps;
 #endif /* OMP_40_ENABLED */
 } ompt_task_info_t;
 
-typedef struct {
-  ompt_data_t parallel_data;
-  void *master_return_address;
+typedef struct
+{
+    ompt_data_t parallel_data;
+    void* master_return_address;
 } ompt_team_info_t;
 
-typedef struct ompt_lw_taskteam_s {
-  ompt_team_info_t ompt_team_info;
-  ompt_task_info_t ompt_task_info;
-  int heap;
-  struct ompt_lw_taskteam_s *parent;
+typedef struct ompt_lw_taskteam_s
+{
+    ompt_team_info_t ompt_team_info;
+    ompt_task_info_t ompt_task_info;
+    int heap;
+    struct ompt_lw_taskteam_s* parent;
 } ompt_lw_taskteam_t;
 
-typedef struct {
-  ompt_data_t thread_data;
-  ompt_data_t task_data; /* stored here from implicit barrier-begin until
+typedef struct
+{
+    ompt_data_t thread_data;
+    ompt_data_t task_data; /* stored here from implicit barrier-begin until
                             implicit-task-end */
-  void *return_address; /* stored here on entry of runtime */
-  omp_state_t state;
-  omp_wait_id_t wait_id;
-  int ompt_task_yielded;
-  void *idle_frame;
+    void* return_address;  /* stored here on entry of runtime */
+    omp_state_t state;
+    omp_wait_id_t wait_id;
+    int ompt_task_yielded;
+    void* idle_frame;
 } ompt_thread_info_t;
 
 extern ompt_callbacks_internal_t ompt_callbacks;
@@ -110,7 +116,7 @@ void ompt_fini(void);
 #define OMPT_GET_RETURN_ADDRESS(level) __builtin_return_address(level)
 #define OMPT_GET_FRAME_ADDRESS(level) __builtin_frame_address(level)
 
-int __kmp_control_tool(uint64_t command, uint64_t modifier, void *arg);
+int __kmp_control_tool(uint64_t command, uint64_t modifier, void* arg);
 
 extern ompt_callbacks_active_t ompt_enabled;
 
@@ -126,12 +132,22 @@ extern ompt_callbacks_active_t ompt_enabled;
 };
 #endif
 
-#endif
-
 /*****************************************************************************
  * types from ompt-specific.h
  ***************************************************************************/
 typedef omp_task_data ompt_thread_t;
 extern boost::shared_ptr<hpx_runtime> hpx_backend;
-ompt_data_t *__ompt_get_thread_data_internal();
-ompt_data_t *__ompt_get_parallel_data_internal();
+//ompt_data_t *__ompt_get_thread_data_internal();
+ompt_data_t* __ompt_get_parallel_data_internal();
+int __ompt_get_task_info_internal(int ancestor_level, int* type,
+    ompt_data_t** task_data, omp_frame_t** task_frame,
+    ompt_data_t** parallel_data, int* thread_num);
+
+/*****************************************************************************
+ * registration function
+ ***************************************************************************/
+extern thread_local ompt_data_t thread_data;
+void on_thread_start(std::size_t num, char const* name);
+void on_thread_stop(std::size_t num, char const* name);
+
+#endif
