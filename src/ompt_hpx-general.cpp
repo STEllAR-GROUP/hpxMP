@@ -192,17 +192,29 @@ void ompt_post_init()
             memset(&ompt_enabled, 0, sizeof(ompt_enabled));
             return;
         }
+
         ompt_data_t task_data = ompt_data_none;
-        if (ompt_enabled.ompt_callback_task_create)
-        {
-            ompt_callbacks.ompt_callback(ompt_callback_task_create)(
-                NULL, NULL, &task_data, ompt_task_initial, 0, NULL);
+
+        if (ompt_enabled.enabled) {
+            if (ompt_enabled.ompt_callback_task_create)
+            {
+                ompt_callbacks.ompt_callback(ompt_callback_task_create)(
+                        NULL, NULL, &task_data, ompt_task_initial, 0, NULL);
+            }
+        }
+
+        //hook callback into hpx
+        if (ompt_enabled.enabled) {
+            if (ompt_enabled.ompt_callback_thread_begin)
+            {
+                hpx::register_thread_on_start_func(&on_thread_start);
+            }
+            if (ompt_enabled.ompt_callback_thread_end)
+            {
+                hpx::register_thread_on_stop_func(&on_thread_stop);
+            }
         }
     }
-
-    //hook callback into hpx
-    hpx::register_thread_on_start_func(&on_thread_start);
-    hpx::register_thread_on_stop_func(&on_thread_stop);
 }
 
 /*****************************************************************************

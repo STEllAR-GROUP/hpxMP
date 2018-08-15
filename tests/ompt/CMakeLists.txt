@@ -5,36 +5,35 @@
 
 if(HPXMP_WITH_OMPT)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fopenmp")
-    #add_executable(thread_begin_end thread_begin_end.cpp)
-    add_executable(parallel parallel.cpp)
-    add_executable(parallel_nested parallel_nested.cpp)
-    add_executable(par_for par_for.cpp)
-    add_executable(task_simple task_simple.cpp)
-    add_executable(task task.cpp)
-    add_executable(task_dep task_dep.cpp)
-    add_executable(task_fp task_fp.cpp)
-    add_executable(task_implicit_simple task_implicit_simple.cpp)
+    set(tests
+            par_for
+            parallel
+            parallel_nested
+            task
+            task_dep
+            task_fp
+            task_implicit_simple
+            task_simple
+            )
+
     enable_testing()
 
     macro(do_test name)
         add_test(${name} ${name})
         set_target_properties(${name} PROPERTIES
-            CXX_STANDARD 11
-            CXX_STANDARD_REQUIRED ON
-            CXX_EXTENSIONS OFF
-        )
+                CXX_STANDARD 11
+                CXX_STANDARD_REQUIRED ON
+                CXX_EXTENSIONS OFF
+                )
         set_tests_properties(${name} PROPERTIES
-            PASS_REGULAR_EXPRESSION "pass" ENVIRONMENT
-                LD_PRELOAD=${PROJECT_BINARY_DIR}/libhpxmp.so
-        )
+                #                PASS_REGULAR_EXPRESSION "pass"
+                ENVIRONMENT LD_PRELOAD=${PROJECT_BINARY_DIR}/libhpxmp.so
+                )
     endmacro(do_test)
 
-    do_test(parallel)
-    do_test(parallel_nested)
-    do_test(par_for)
-    do_test(task_simple)
-    do_test(task)
-    do_test(task_dep)
-    do_test(task_fp)
-    do_test(task_implicit_simple)
+    foreach(test ${tests})
+        set(sources ${test}.cpp)
+        add_executable(${test} ${sources})
+        do_test(${test})
+    endforeach()
 endif()
