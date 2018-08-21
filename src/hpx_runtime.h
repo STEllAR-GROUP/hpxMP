@@ -222,6 +222,9 @@ class omp_task_data {
         int loop_num{0};
         bool in_taskgroup{false};
         //shared_future<void> last_df_task;
+#if HPXMP_HAVE_OMPT
+        ompt_data_t task_data = ompt_data_none;
+#endif
 
 #ifdef OMP_COMPLIANT
         shared_ptr<local_priority_queue_executor> tg_exec;
