@@ -163,7 +163,28 @@ kmp_int32 __kmpc_omp_taskwait( ident_t *loc_ref, kmp_int32 gtid ){
         std::cout<<"__kmpc_omp_taskwait"<<std::endl;
     #endif
     start_backend();
+    #if HPXMP_HAVE_OMPT
+    ompt_data_t *my_task_data = &hpx_backend->get_task_data()->task_data;
+    if (ompt_enabled.enabled) {
+        if (ompt_enabled.ompt_callback_sync_region_wait) {
+            ompt_callbacks.ompt_callback(ompt_callback_sync_region_wait)(
+                    ompt_sync_region_taskwait, ompt_scope_begin, __ompt_get_parallel_data_internal(),
+                    my_task_data, __builtin_return_address(0));
+        }
+    }
+    #endif
+
     hpx_backend->task_wait();
+
+    #if HPXMP_HAVE_OMPT
+    if (ompt_enabled.enabled) {
+        if (ompt_enabled.ompt_callback_sync_region_wait) {
+            ompt_callbacks.ompt_callback(ompt_callback_sync_region_wait)(
+                    ompt_sync_region_taskwait, ompt_scope_end, __ompt_get_parallel_data_internal(),
+                    my_task_data, __builtin_return_address(0));
+        }
+    }
+    #endif
     return 0;
 }
 

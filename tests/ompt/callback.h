@@ -25,6 +25,8 @@ int count_implicit_task_create = 0;
 int count_implicit_task_end = 0;
 int count_barrier_begin = 0;
 int count_barrier_end = 0;
+int count_taskwait_begin = 0;
+int count_taskwait_end = 0;
 
 
 std::map<uint64_t, int> count_parallel_id;
@@ -36,6 +38,8 @@ std::map<uint64_t, int> count_task_schedule_id;
 std::map<uint64_t, int> count_implicit_task_id;
 std::map<uint64_t, int> count_barrier_parallel_id;
 std::map<uint64_t, int> count_barrier_task_id;
+std::map<uint64_t, int> count_taskwait_parallel_id;
+std::map<uint64_t, int> count_taskwait_task_id;
 
 std::mutex& get_mutex(){
     static std::mutex m;
@@ -257,6 +261,9 @@ static void on_ompt_callback_sync_region_wait(ompt_sync_region_kind_t kind,
                 parallel_data->value,
                 task_data->value,
                 codeptr_ra);
+                count_taskwait_parallel_id[parallel_data->value]++;
+                count_taskwait_task_id[task_data->value]++;
+                count_taskwait_begin++;
             break;
         case ompt_sync_region_taskgroup:
             printf("%" PRIu64
@@ -292,6 +299,9 @@ static void on_ompt_callback_sync_region_wait(ompt_sync_region_kind_t kind,
                 (parallel_data) ? parallel_data->value : 0,
                 task_data->value,
                 codeptr_ra);
+            count_taskwait_parallel_id[parallel_data->value]--;
+            count_taskwait_task_id[task_data->value]--;
+            count_taskwait_end++;
             break;
         case ompt_sync_region_taskgroup:
             printf("%" PRIu64
