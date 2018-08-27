@@ -16,6 +16,7 @@ if(HPXMP_WITH_OMPT)
             task_simple
             wait_barrier
             task_wait
+            task_group
             )
 
     enable_testing()

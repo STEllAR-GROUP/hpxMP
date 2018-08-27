@@ -23,7 +23,8 @@ int main() {
             }
         }
     }
-    do_generic_test();
+    if(do_generic_test())
+        return 1;
     //check if taskwait task id matches
     for (auto it = count_taskwait_task_id.begin();
          it != count_taskwait_task_id.end();

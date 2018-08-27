@@ -19,7 +19,9 @@ int main()
         printf("hello world 4\n");
     }
 
-    do_generic_test();
+    if(do_generic_test())
+        return 1;
+    
     //check if barrier task id matches
     for (auto it = count_barrier_task_id.begin();
          it != count_barrier_task_id.end();
