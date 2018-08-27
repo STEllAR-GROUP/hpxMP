@@ -14,6 +14,7 @@ if(HPXMP_WITH_OMPT)
             task_fp
             task_implicit_simple
             task_simple
+            wait_barrier
             )
 
     enable_testing()
@@ -28,6 +29,7 @@ if(HPXMP_WITH_OMPT)
         set_tests_properties(${name} PROPERTIES
                 #                PASS_REGULAR_EXPRESSION "pass"
                 ENVIRONMENT LD_PRELOAD=${PROJECT_BINARY_DIR}/libhpxmp.so
+                TIMEOUT 10
                 )
     endmacro(do_test)
 

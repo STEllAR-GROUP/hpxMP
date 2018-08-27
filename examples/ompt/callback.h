@@ -42,6 +42,7 @@ static const char* ompt_task_status_t_values[] = {NULL, "ompt_task_complete",
 
 static ompt_set_callback_t ompt_set_callback;
 static ompt_get_unique_id_t ompt_get_unique_id;
+static ompt_get_thread_data_t ompt_get_thread_data;
 
 static void on_ompt_callback_thread_begin(ompt_thread_type_t thread_type,
     ompt_data_t* thread_data)

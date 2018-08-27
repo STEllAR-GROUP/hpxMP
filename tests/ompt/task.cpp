@@ -46,13 +46,6 @@ int main()
     if (task_type[1] != 1 || task_type[4] != 5)
         return 1;
 
-    //check return adress of task create(only check if the count is right)
-    for (auto it = return_address.begin(); it != return_address.end(); ++it)
-    {
-        if (it->second != 1 && it->second != 4)
-            return 1;
-    }
-
     //check if task id matches
     for (auto it = count_task_id.begin(); it != count_task_id.end(); ++it)
     {

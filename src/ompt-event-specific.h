@@ -38,7 +38,7 @@
 #if OMPT_OPTIONAL
 #define ompt_event_MAY_ALWAYS_OPTIONAL ompt_event_MAY_ALWAYS
 #else
-#define ompt_event_MAY_ALWAYS_OPTIONAL ompt_event_UNIMPLEMENTED
+#define ompt_event_MAY_ALWAYS_OPTIONAL ompt_set_always
 #endif
 
 /*----------------------------------------------------------------------------

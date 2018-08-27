@@ -272,6 +272,23 @@ void task_setup( int gtid, kmp_task_t *task, omp_icv icv,
     auto task_func = task->routine;
     omp_task_data task_data(gtid, team, icv);
     set_thread_data( get_self_id(), reinterpret_cast<size_t>(&task_data));
+#if HPXMP_HAVE_OMPT
+    ompt_data_t *my_task_data = &hpx_backend->get_task_data()->task_data;
+    if (ompt_enabled.ompt_callback_task_create)
+    {
+        ompt_callbacks.ompt_callback(ompt_callback_task_create)(NULL, NULL,
+            my_task_data, ompt_task_explicit, 0, __builtin_return_address(0));
+    }
+    ompt_task_status_t status = ompt_task_others;
+    /* let OMPT know that we're about to run this task */
+    ompt_data_t *prior_task_data =
+        &hpx_backend->get_task_data()->team->parent_data;
+    if (ompt_enabled.ompt_callback_task_schedule)
+    {
+        ompt_callbacks.ompt_callback(ompt_callback_task_schedule)(
+            prior_task_data, status, my_task_data);
+    }
+#endif
 
     task_func(gtid, task);
 
@@ -280,6 +297,15 @@ void task_setup( int gtid, kmp_task_t *task, omp_icv icv,
     team->num_tasks--;
 #endif
     delete[] (char*)task;
+#if HPXMP_HAVE_OMPT
+    ompt_task_status_t status_fin = ompt_task_complete;
+    /* let OMPT know that we're returning to the callee task */
+    if (ompt_enabled.ompt_callback_task_schedule)
+    {
+        ompt_callbacks.ompt_callback(ompt_callback_task_schedule)(
+            my_task_data, status_fin, prior_task_data);
+    }
+#endif
 }
 
 #ifdef OMP_COMPLIANT
@@ -527,16 +553,18 @@ void thread_setup( invoke_func kmp_invoke, microtask_t thread_func,
         thread_func(&tid, &tid);
     } else {
 #if HPXMP_HAVE_OMPT
-    ompt_data_t implicit_task_data = ompt_data_none;
-    // get parallel id from parent task data;
-    ompt_data_t parallel_data = team->parallel_data;
-    if (ompt_enabled.enabled) {
-        if (ompt_enabled.ompt_callback_implicit_task) {
-            ompt_callbacks.ompt_callback(ompt_callback_implicit_task)(
-                    ompt_scope_begin, &parallel_data, &implicit_task_data, 0,
-                    0);
+        ompt_data_t *implicit_task_data =
+            &hpx_backend->get_task_data()->task_data;
+        // get parallel id from parent task data;
+        ompt_data_t parallel_data = team->parallel_data;
+        if (ompt_enabled.enabled)
+        {
+            if (ompt_enabled.ompt_callback_implicit_task)
+            {
+                ompt_callbacks.ompt_callback(ompt_callback_implicit_task)(
+                    ompt_scope_begin, &parallel_data, implicit_task_data, 0, 0);
+            }
         }
-    }
 #endif
 
     kmp_invoke(thread_func, tid, tid, argc, argv);
@@ -545,7 +573,7 @@ void thread_setup( invoke_func kmp_invoke, microtask_t thread_func,
     if (ompt_enabled.enabled) {
         if (ompt_enabled.ompt_callback_implicit_task) {
             ompt_callbacks.ompt_callback(ompt_callback_implicit_task)(
-                    ompt_scope_end, NULL, &implicit_task_data, 0,
+                    ompt_scope_end, NULL, implicit_task_data, 0,
                     0);
         }
     }

@@ -29,7 +29,8 @@
 
 #define FOREACH_OMPT_INQUIRY_FN(macro)      \
     macro(ompt_set_callback)                \
-    macro(ompt_get_unique_id)
+    macro(ompt_get_unique_id)               \
+    macro(ompt_get_thread_data)
 
 #define FOREACH_OMP_STATE(macro)                                                                \
                                                                                                 \

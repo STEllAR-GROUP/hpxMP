@@ -249,6 +249,14 @@ OMPT_API_ROUTINE int ompt_set_callback(ompt_callbacks_t which,
 }
 
 /*****************************************************************************
+ * tasks
+ ****************************************************************************/
+
+OMPT_API_ROUTINE ompt_data_t *ompt_get_thread_data(void) {
+    return __ompt_get_thread_data_internal();
+}
+
+/*****************************************************************************
  * misc
  ****************************************************************************/
 #define KMP_TEST_THEN_INC64(p)                                                 \
@@ -286,10 +294,9 @@ static ompt_interface_fn_t ompt_fn_lookup(const char* s)
  * From ompt-specific.cpp
  ****************************************************************************/
 //not correctly implemented
-//ompt_data_t *__ompt_get_thread_data_internal() {
-//    omp_task_data *omp_task= hpx_backend->get_task_data();
-//    return &omp_task->thread_data;
-//}
+ompt_data_t *__ompt_get_thread_data_internal() {
+    return &thread_data;
+}
 
 ompt_data_t* __ompt_get_parallel_data_internal()
 {

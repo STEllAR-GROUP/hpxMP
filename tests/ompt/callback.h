@@ -23,6 +23,9 @@ int count_task_create = 0;
 int count_task_complete = 0;
 int count_implicit_task_create = 0;
 int count_implicit_task_end = 0;
+int count_barrier_begin = 0;
+int count_barrier_end = 0;
+
 
 std::map<uint64_t, int> count_parallel_id;
 std::map<uint64_t, int> team_size;
@@ -31,8 +34,13 @@ std::map<const void*, int> return_address;
 std::map<uint64_t, int> count_task_id;
 std::map<uint64_t, int> count_task_schedule_id;
 std::map<uint64_t, int> count_implicit_task_id;
+std::map<uint64_t, int> count_barrier_parallel_id;
+std::map<uint64_t, int> count_barrier_task_id;
 
-std::mutex global_mutex;
+std::mutex& get_mutex(){
+    static std::mutex m;
+    return m;
+}
 
 static const char* ompt_thread_type_t_values[] = {
     NULL, "ompt_thread_initial", "ompt_thread_worker", "ompt_thread_other"};
@@ -65,13 +73,14 @@ static const char* ompt_task_status_t_values[] = {NULL, "ompt_task_complete",
 
 static ompt_set_callback_t ompt_set_callback;
 static ompt_get_unique_id_t ompt_get_unique_id;
+static ompt_get_thread_data_t ompt_get_thread_data;
 
 static void on_ompt_callback_thread_begin(ompt_thread_type_t thread_type,
     ompt_data_t* thread_data)
 {
-    global_mutex.lock();
+    std::lock_guard<std::mutex> lock(get_mutex());
     count_registrations++;
-    global_mutex.unlock();
+     
     if (thread_data->ptr)
         printf("%s\n", "0: thread_data initially not null");
     thread_data->value = ompt_get_unique_id();
@@ -84,9 +93,8 @@ static void on_ompt_callback_thread_begin(ompt_thread_type_t thread_type,
 
 static void on_ompt_callback_thread_end(ompt_data_t* thread_data)
 {
-    global_mutex.lock();
+    std::lock_guard<std::mutex> lock(get_mutex());
     count_deregistrations++;
-    global_mutex.unlock();
     printf(
         "ompt_event_thread_end: thread_id=%" PRIu64 "\n", thread_data->value);
 }
@@ -102,10 +110,9 @@ static void on_ompt_callback_parallel_begin(ompt_data_t* encountering_task_data,
         printf("0: parallel_data initially not null\n");
     parallel_data->value = ompt_get_unique_id();
 
-    global_mutex.lock();
+    std::lock_guard<std::mutex> lock(get_mutex());
     count_parallel_begin++;
     count_parallel_id[parallel_data->value] = 1;
-    global_mutex.unlock();
 
     team_size[parallel_data->value] = requested_team_size;
     printf("ompt_event_parallel_begin: parallel_id=%" PRIu64
@@ -121,10 +128,10 @@ static void on_ompt_callback_parallel_end(ompt_data_t* parallel_data,
     ompt_invoker_t invoker,
     const void* codeptr_ra)
 {
-    global_mutex.lock();
+     std::lock_guard<std::mutex> lock(get_mutex());
     count_parallel_end++;
     count_parallel_id[parallel_data->value]--;
-    global_mutex.unlock();
+     
     printf("ompt_event_parallel_end: parallel_id=%" PRIu64
            ", codeptr_ra=%p, invoker=%d\n",
         parallel_data->value,
@@ -142,15 +149,13 @@ static void on_ompt_callback_task_create(ompt_data_t* encountering_task_data,
     if (new_task_data->ptr)
         printf("0: new_task_data initially not null\n");
     new_task_data->value = ompt_get_unique_id();
-
-    global_mutex.lock();
+    std::lock_guard<std::mutex> lock(get_mutex());
     count_task_create++;
     task_type[type]++;
     return_address[codeptr_ra]++;
     //initial task does not have task_end callback
     if (type != 1)
         count_task_id[new_task_data->value] = 1;
-    global_mutex.unlock();
 
     char buffer[2048];
 
@@ -174,19 +179,16 @@ static void on_ompt_callback_task_schedule(ompt_data_t* first_task_data,
         second_task_data->value,
         ompt_task_status_t_values[prior_task_status],
         prior_task_status);
-    global_mutex.lock();
+     std::lock_guard<std::mutex> lock(get_mutex());
     count_task_schedule_id[first_task_data->value]++;
     count_task_schedule_id[second_task_data->value]--;
-    global_mutex.unlock();
 
     if (prior_task_status == ompt_task_complete)
     {
         printf("ompt_event_task_end: task_id=%" PRIu64 "\n",
             first_task_data->value);
-        global_mutex.lock();
         count_task_complete++;
         count_task_id[first_task_data->value]--;
-        global_mutex.unlock();
     }
 }
 
@@ -196,30 +198,111 @@ static void on_ompt_callback_implicit_task(ompt_scope_endpoint_t endpoint,
     unsigned int team_size,
     unsigned int thread_num)
 {
+    std::lock_guard<std::mutex> lock(get_mutex());
     switch (endpoint)
     {
     case ompt_scope_begin:
         if (task_data->ptr)
             printf("%s\n", "0: task_data initially not null");
         task_data->value = ompt_get_unique_id();
-        global_mutex.lock();
         count_implicit_task_create++;
         count_implicit_task_id[task_data->value]++;
-        global_mutex.unlock();
+         
         printf("ompt_event_implicit_task_begin: parallel_id=%" PRIu64
                ", task_id=%" PRIu64 "\n",
             parallel_data->value,
             task_data->value);
         break;
     case ompt_scope_end:
-        global_mutex.lock();
         count_implicit_task_end++;
         count_implicit_task_id[task_data->value]--;
-        global_mutex.unlock();
+
         printf("ompt_event_implicit_task_end: parallel_id=%" PRIu64
                ", task_id=%" PRIu64 "\n",
             (parallel_data) ? parallel_data->value : 0,
             task_data->value);
+        break;
+    }
+}
+
+static void on_ompt_callback_sync_region_wait(ompt_sync_region_kind_t kind,
+    ompt_scope_endpoint_t endpoint,
+    ompt_data_t* parallel_data,
+    ompt_data_t* task_data,
+    const void* codeptr_ra)
+{
+    std::lock_guard<std::mutex> lock(get_mutex());
+    switch (endpoint)
+    {
+    case ompt_scope_begin:
+        switch (kind)
+        {
+        case ompt_sync_region_barrier:
+            printf("%" PRIu64
+                   ": ompt_event_wait_barrier_begin: parallel_id=%" PRIu64
+                   ", task_id=%" PRIu64 ", codeptr_ra=%p\n",
+                ompt_get_thread_data()->value,
+                parallel_data->value,
+                task_data->value,
+                codeptr_ra);
+            count_barrier_parallel_id[parallel_data->value]++;
+            count_barrier_task_id[task_data->value]++;
+            count_barrier_begin++;
+            break;
+        case ompt_sync_region_taskwait:
+            printf("%" PRIu64
+                   ": ompt_event_wait_taskwait_begin: parallel_id=%" PRIu64
+                   ", task_id=%" PRIu64 ", codeptr_ra=%p\n",
+                ompt_get_thread_data()->value,
+                parallel_data->value,
+                task_data->value,
+                codeptr_ra);
+            break;
+        case ompt_sync_region_taskgroup:
+            printf("%" PRIu64
+                   ": ompt_event_wait_taskgroup_begin: parallel_id=%" PRIu64
+                   ", task_id=%" PRIu64 ", codeptr_ra=%p\n",
+                ompt_get_thread_data()->value,
+                parallel_data->value,
+                task_data->value,
+                codeptr_ra);
+            break;
+        }
+        break;
+    case ompt_scope_end:
+        switch (kind)
+        {
+        case ompt_sync_region_barrier:
+            printf("%" PRIu64
+                   ": ompt_event_wait_barrier_end: parallel_id=%" PRIu64
+                   ", task_id=%" PRIu64 ", codeptr_ra=%p\n",
+                ompt_get_thread_data()->value,
+                (parallel_data) ? parallel_data->value : 0,
+                task_data->value,
+                codeptr_ra);
+            count_barrier_parallel_id[parallel_data->value]--;
+            count_barrier_task_id[task_data->value]--;
+            count_barrier_end++;
+            break;
+        case ompt_sync_region_taskwait:
+            printf("%" PRIu64
+                   ": ompt_event_wait_taskwait_end: parallel_id=%" PRIu64
+                   ", task_id=%" PRIu64 ", codeptr_ra=%p\n",
+                ompt_get_thread_data()->value,
+                (parallel_data) ? parallel_data->value : 0,
+                task_data->value,
+                codeptr_ra);
+            break;
+        case ompt_sync_region_taskgroup:
+            printf("%" PRIu64
+                   ": ompt_event_wait_taskgroup_end: parallel_id=%" PRIu64
+                   ", task_id=%" PRIu64 ", codeptr_ra=%p\n",
+                ompt_get_thread_data()->value,
+                (parallel_data) ? parallel_data->value : 0,
+                task_data->value,
+                codeptr_ra);
+            break;
+        }
         break;
     }
 }
@@ -239,6 +322,7 @@ int ompt_initialize(ompt_function_lookup_t lookup, ompt_data_t* tool_data)
 {
     ompt_set_callback = (ompt_set_callback_t) lookup("ompt_set_callback");
     ompt_get_unique_id = (ompt_get_unique_id_t) lookup("ompt_get_unique_id");
+    ompt_get_thread_data = (ompt_get_thread_data_t) lookup("ompt_get_thread_data");
 
     //    register_callback(ompt_callback_thread_begin);
     //    register_callback(ompt_callback_thread_end);
@@ -247,6 +331,7 @@ int ompt_initialize(ompt_function_lookup_t lookup, ompt_data_t* tool_data)
     register_callback(ompt_callback_task_create);
     register_callback(ompt_callback_task_schedule);
     register_callback(ompt_callback_implicit_task);
+    register_callback_t(ompt_callback_sync_region_wait, ompt_callback_sync_region_t);
 
     printf("0: NULL_POINTER=%p\n", (void*) NULL);
     return 1;    //success
