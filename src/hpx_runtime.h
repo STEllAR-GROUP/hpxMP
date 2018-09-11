@@ -246,6 +246,7 @@ class hpx_runtime {
         hpx_runtime();
         void fork(invoke_func kmp_invoke, microtask_t thread_func, int argc, void** argv);
         parallel_region* get_team();
+        bool set_thread_data_check();
         omp_task_data* get_task_data();
         int get_thread_num();
         int get_num_threads();

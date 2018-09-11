@@ -145,6 +145,16 @@ parallel_region* hpx_runtime::get_team()
     return team;
 }
 
+bool hpx_runtime::set_thread_data_check() {
+    omp_task_data *data;
+    if (hpx::threads::get_self_ptr()) {
+        data = reinterpret_cast<omp_task_data *>(get_thread_data(get_self_id()));
+        if (data)
+            return false;
+    }
+    return true;
+}
+
 omp_task_data* hpx_runtime::get_task_data()
 {
     omp_task_data *data;
@@ -271,7 +281,8 @@ void task_setup( int gtid, kmp_task_t *task, omp_icv icv,
 {
     auto task_func = task->routine;
     omp_task_data task_data(gtid, team, icv);
-    set_thread_data( get_self_id(), reinterpret_cast<size_t>(&task_data));
+    if(hpx_backend->set_thread_data_check() == true)
+        set_thread_data( get_self_id(), reinterpret_cast<size_t>(&task_data));
 #if HPXMP_HAVE_OMPT
     ompt_data_t *my_task_data = &hpx_backend->get_task_data()->task_data;
     if (ompt_enabled.ompt_callback_task_create)
