@@ -307,7 +307,8 @@ void task_setup( int gtid, kmp_task_t *task, omp_icv icv,
 #ifndef OMP_COMPLIANT
     team->num_tasks--;
 #endif
-    delete[] (char*)task;
+    if(task->part_id ==0)
+        delete[] (char*)task;
 #if HPXMP_HAVE_OMPT
     ompt_task_status_t status_fin = ompt_task_complete;
     /* let OMPT know that we're returning to the callee task */
