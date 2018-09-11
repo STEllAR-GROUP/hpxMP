@@ -149,10 +149,10 @@ bool hpx_runtime::set_thread_data_check() {
     omp_task_data *data;
     if (hpx::threads::get_self_ptr()) {
         data = reinterpret_cast<omp_task_data *>(get_thread_data(get_self_id()));
-        if (data)
-            return false;
+        if (!data)
+            return true;
     }
-    return true;
+    return false;
 }
 
 omp_task_data* hpx_runtime::get_task_data()
