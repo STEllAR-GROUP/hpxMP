@@ -6,6 +6,7 @@
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fopenmp")
 set(tests
         task_tree_simple
+        task_no_parallel
     )
 
 enable_testing()
