@@ -44,7 +44,7 @@ set(tests
         #omp-thrdprvt    #timeout on circleci
         #omp-threadprivate  #timeout on circleci
         #omp-vla    #timeout on circleci
-        # task_spawn_time
+        #task_spawn_time
         )
 
 enable_testing()

@@ -558,8 +558,8 @@ void thread_setup( invoke_func kmp_invoke, microtask_t thread_func,
                    atomic<int>& running_threads )
 {
     omp_task_data task_data(tid, team, parent);
-
-    set_thread_data( get_self_id(), reinterpret_cast<size_t>(&task_data));
+    if(hpx_backend->set_thread_data_check()==true)
+        set_thread_data( get_self_id(), reinterpret_cast<size_t>(&task_data));
 
     if(argc == 0) { //note: kmp_invoke segfaults iff argc == 0
         thread_func(&tid, &tid);
