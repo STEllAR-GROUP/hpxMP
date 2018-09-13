@@ -8,7 +8,7 @@ if(HPXMP_WITH_OMPT)
     set(tests
             par_for
             parallel
-            parallel_nested
+            parallel_nested #sometime hangs on circleci
             task
             task_dep
             task_fp

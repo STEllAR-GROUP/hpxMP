@@ -82,5 +82,7 @@ endif()
 
 add_subdirectory(examples/ompt)
 add_subdirectory(tests/ompt)
+add_subdirectory(tests/openmp)
+add_subdirectory(tests/omp/tests/src)
 
 enable_testing()
