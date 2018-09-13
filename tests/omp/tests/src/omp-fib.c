@@ -43,7 +43,7 @@ int main(int argc, char* argv[])
     {
 #pragma omp master
         {
-#pragma omp task untied shared(f)
+#pragma omp task shared(f)
             {
                 f = fib1(input);
             }
@@ -75,12 +75,12 @@ long fib1(int k)
         return fib1(k-1) + fib1(k-2);
     }
 
-#pragma omp task untied shared(p2)
+#pragma omp task shared(p2)
     {
         p2 = fib1(k-2);
     }
 
-#pragma omp task untied shared(p1)
+#pragma omp task shared(p1)
     {
         p1 = fib1(k-1);
     }
