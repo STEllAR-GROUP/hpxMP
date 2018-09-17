@@ -1,7 +1,7 @@
 #include "hpx_runtime.h"
 #include <cstdarg>
 
-
+extern "C" void start_backend();
 typedef int kmp_int32;
 typedef long long kmp_int64;
 

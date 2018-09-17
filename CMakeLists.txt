@@ -13,13 +13,15 @@ set(hpxmp_sources
         src/intel_hpxMP.cpp
         src/hpx_runtime.cpp
         src/kmp_atomic.cpp
-        src/loop_schedule.cpp)
+        src/loop_schedule.cpp
+        src/gcc_hpxMP.cpp)
 
 set(hpxmp_headers
         src/intel_hpxMP.h
         src/hpx_runtime.h
         src/kmp_atomic.h
-        src/loop_schedule.h)
+        src/loop_schedule.h
+        src/gcc_hpxMP.h)
 
 set(HPXMP_WITH_TRACE OFF CACHE BOOL "display traces in debug mode")
 if(HPXMP_WITH_TRACE)
@@ -84,4 +86,5 @@ add_subdirectory(examples/ompt)
 add_subdirectory(tests/ompt)
 add_subdirectory(tests/openmp)
 add_subdirectory(tests/omp/tests/src)
+add_subdirectory(examples/gcc_example)
 enable_testing()
