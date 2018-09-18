@@ -301,8 +301,11 @@ void task_setup( int gtid, kmp_task_t *task, omp_icv icv,
     }
 #endif
 
+#ifdef HPXMP_HAVE_GCC
+    ((void (*)(void *))(*(task->routine)))(task->shareds);
+#else
     task_func(gtid, task);
-
+#endif
     *(parent_task_counter) -= 1;
 #ifndef OMP_COMPLIANT
     team->num_tasks--;

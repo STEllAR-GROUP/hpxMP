@@ -34,10 +34,7 @@ __kmp_GOMP_microtask_wrapper(int *gtid, int *npr, void (*task)(void *),
 
 void
 xexpand(KMP_API_NAME_GOMP_PARALLEL)(void (*task)(void *), void *data, unsigned num_threads, unsigned int flags) {
-    std::cout<<"GOMP_PARALLEL"<<std::endl;
-#if defined DEBUG && defined HPXMP_HAVE_TRACE
-    std::cout<<"__kmpc_fork_call"<<std::endl;
-#endif
+    printf("GOMP_PARALLEL\n");
 #if HPXMP_HAVE_OMPT
     ompt_pre_init();
     ompt_post_init();
@@ -48,6 +45,38 @@ xexpand(KMP_API_NAME_GOMP_PARALLEL)(void (*task)(void *), void *data, unsigned n
     my_data->set_threads_requested(num_threads);
 
     __kmp_GOMP_fork_call(task,(microtask_t )__kmp_GOMP_microtask_wrapper, 2, task, data);
+}
+
+void
+xexpand(KMP_API_NAME_GOMP_TASK)(void (*func)(void *), void *data, void (*copy_func)(void *, void *),
+                                long arg_size, long arg_align, bool if_cond, unsigned gomp_flags){
+    printf("GOMP_TASK\n");
+    int gtid = hpx_backend->get_thread_num();
+
+    kmp_task_t *task = __kmpc_omp_task_alloc(nullptr, gtid, 0,
+                                        sizeof(kmp_task_t), arg_size ? arg_size + arg_align - 1 : 0,
+                                        (kmp_routine_entry_t)func);
+
+    if (arg_size > 0) {
+        if (arg_align > 0) {
+            task->shareds = (void *)((((size_t)task->shareds)
+                                      + arg_align - 1) / arg_align * arg_align);
+        }
+        if (copy_func) {
+            (*copy_func)(task->shareds, data);
+        }
+        else {
+            memcpy(task->shareds, data, arg_size);
+        }
+    }
+    if (if_cond) {
+        __kmpc_omp_task(nullptr, gtid, task);
+    }
+    else {
+        __kmpc_omp_task_begin_if0(nullptr, gtid, task);
+        func(data);
+        __kmpc_omp_task_complete_if0(nullptr, gtid, task);
+    }
 }
 
 // GOMP_1.0 aliases

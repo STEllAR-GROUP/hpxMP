@@ -40,6 +40,11 @@ if(HPXMP_WITH_OMPT)
             src/ompt-internal.h)
 endif()
 
+#temperory when build with gcc
+if(HPXMP_WITH_GCC)
+    add_definitions(-DHPXMP_HAVE_GCC)
+endif()
+
 # Find and include HPX settings
 if(NOT HPX_WITH_HPXMP)
 

@@ -6,6 +6,8 @@
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fopenmp")
 set(tests
         hello_world_gcc
+        task_gcc
+        task_with_global
         )
 
 enable_testing()
