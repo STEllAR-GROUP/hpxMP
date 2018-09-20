@@ -8,6 +8,8 @@ set(tests
         hello_world_gcc
         task_gcc
         task_with_global
+        task_wait_single_gcc
+        private_shared_gcc
         )
 
 enable_testing()
@@ -21,7 +23,7 @@ macro(do_test name)
             )
     set_tests_properties(${name} PROPERTIES
             #                PASS_REGULAR_EXPRESSION "pass"
-            ENVIRONMENT LD_PRELOAD=${PROJECT_BINARY_DIR}/libhpxmp.so
+            ENVIRONMENT "LD_PRELOAD=${PROJECT_BINARY_DIR}/libhpxmp.so;OMP_NUM_THREADS=2"
             TIMEOUT 10
             )
 endmacro(do_test)

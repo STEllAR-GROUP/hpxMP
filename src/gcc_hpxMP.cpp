@@ -50,7 +50,7 @@ xexpand(KMP_API_NAME_GOMP_PARALLEL)(void (*task)(void *), void *data, unsigned n
 void
 xexpand(KMP_API_NAME_GOMP_TASK)(void (*func)(void *), void *data, void (*copy_func)(void *, void *),
                                 long arg_size, long arg_align, bool if_cond, unsigned gomp_flags){
-    printf("GOMP_TASK\n");
+//    printf("GOMP_TASK\n");
     int gtid = hpx_backend->get_thread_num();
 
     kmp_task_t *task = __kmpc_omp_task_alloc(nullptr, gtid, 0,
@@ -77,6 +77,20 @@ xexpand(KMP_API_NAME_GOMP_TASK)(void (*func)(void *), void *data, void (*copy_fu
         func(data);
         __kmpc_omp_task_complete_if0(nullptr, gtid, task);
     }
+}
+
+void
+xexpand(KMP_API_NAME_GOMP_TASKWAIT)(void)
+{
+//    printf("GOMP_TASKWAIT\n");
+    __kmpc_omp_taskwait(nullptr, NULL);
+}
+
+int
+xexpand(KMP_API_NAME_GOMP_SINGLE_START)(void)
+{
+//    printf("SINGLE_START\n");
+    return __kmpc_single(nullptr, NULL);
 }
 
 // GOMP_1.0 aliases
