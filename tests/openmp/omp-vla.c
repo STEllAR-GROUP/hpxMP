@@ -21,4 +21,7 @@ int main(int argc, char **argv) {
 #pragma omp task untied
     sum = arr_add(arr_size);
     printf("sum = %d (should be %d)\n", sum, 2* arr_size);
+    if(sum != 4000)
+        return 1;
+    return 0;
 }
