@@ -26,5 +26,6 @@ int main() {
         }
     }
     printf("fib = %d\n", f);
+    if(f != 21) return 1;
     return 0;
 }

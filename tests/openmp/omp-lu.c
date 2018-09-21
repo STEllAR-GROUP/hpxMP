@@ -203,6 +203,8 @@ int main (int argc, char *argv[])
       }
     }
   printf("Errors = %d \n", temp);
+  if (temp != 0 )
+    return 1;
 #endif
   return 0;
 

@@ -4,14 +4,11 @@ int main()
 {
     int x = 42;
     int i;
-#pragma omp parallel 
-    {
-#pragma omp for
+#pragma omp parallel for shared(x)
         for(i = 0; i < 4;i++) {
-            if(i == 0)
                 x++;
         }
-#pragma omp barrier
-        printf("x = %d\n", x);
-    }
+    printf("x = %d\n", x);
+    if(x!=46) return 1;
+    return 0;
 }
