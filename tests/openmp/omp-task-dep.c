@@ -28,4 +28,7 @@ int main(int argc, char **argv) {
     printf("x = %d\n",x);
     printf("y = %d\n",y);
     printf("z = %d\n",z);
+    if(x != 42 || y !=53 || z !=64)
+        return 1;
+    return 0;
 }

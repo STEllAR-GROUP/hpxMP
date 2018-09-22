@@ -58,6 +58,7 @@ int main(int argc, char* argv[])
     m = (s*1000 + u/1000.0)  + 0.5;
     printf("cutoff = %d\n", cutoff);
     printf("time = %.2lfms\n", m );
+    if(f != 46368) return 1;
     return 0;
 
 }
