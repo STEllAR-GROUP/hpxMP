@@ -17,6 +17,12 @@ xexpand(KMP_API_NAME_GOMP_TASKWAIT)(void);
 extern "C" int
 xexpand(KMP_API_NAME_GOMP_SINGLE_START)(void);
 
+extern "C" void *
+xexpand(KMP_API_NAME_GOMP_SINGLE_COPY_START)(void);
+
+extern "C" void
+xexpand(KMP_API_NAME_GOMP_SINGLE_COPY_END)(void *data);
+
 extern "C" void
 xexpand(KMP_API_NAME_GOMP_BARRIER)(void);
 

@@ -94,6 +94,51 @@ xexpand(KMP_API_NAME_GOMP_SINGLE_START)(void)
     return __kmpc_single(nullptr, 0);
 }
 
+//TODO: omp-copyprivate not printing correct result yet,
+//TODO: problem with compiling with clang as well use num_threads = 5
+
+void *xexpand(KMP_API_NAME_GOMP_SINGLE_COPY_START)(void)
+{
+    printf("KMP_API_NAME_GOMP_SINGLE_COPY_START\n");
+    void *retval;
+    //
+    // If this is the first thread to enter, return NULL.  The generated
+    // code will then call GOMP_single_copy_end() for this thread only,
+    // with the copyprivate data pointer as an argument.
+    //
+    if (__kmpc_single(nullptr, 0))
+        return NULL;
+
+    //
+    // Wait for the first thread to set the copyprivate data pointer,
+    // and for all other threads to reach this point.
+    //
+    hpx_backend->barrier_wait();
+
+    //
+    // Retrieve the value of the copyprivate data point, and wait for all
+    // threads to do likewise, then return.
+    //
+    retval = hpx_backend->get_team()->copyprivate_data;
+    hpx_backend->barrier_wait();
+    return retval;
+}
+
+void xexpand(KMP_API_NAME_GOMP_SINGLE_COPY_END)(void *data)
+{
+    printf("KMP_API_NAME_GOMP_SINGLE_COPY_END\n");
+    //
+    // Set the copyprivate data pointer fo the team, then hit the barrier
+    // so that the other threads will continue on and read it.  Hit another
+    // barrier before continuing, so that the know that the copyprivate
+    // data pointer has been propagated to all threads before trying to
+    // reuse the t_copypriv_data field.
+    //
+    hpx_backend->get_team()->copyprivate_data = data;
+    hpx_backend->barrier_wait();
+    hpx_backend->barrier_wait();
+}
+
 void
 xexpand(KMP_API_NAME_GOMP_BARRIER)(void)
 {

@@ -10,6 +10,7 @@ set(tests
         task_with_global
         task_wait_single_gcc
         private_shared_gcc
+        omp-copyprivate
         )
 
 enable_testing()
