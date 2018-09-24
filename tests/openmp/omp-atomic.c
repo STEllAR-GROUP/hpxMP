@@ -6,17 +6,14 @@
 #include <stdio.h>
 
 int main() {
-    int x=0, y=0;
-#pragma omp parallel num_threads(2)
+    int x=0;
+#pragma omp parallel for
+    for (int i = 0; i<10000000; i++)
     {
-#pragma omp critical
-        {
-            for (int i = 0; i<1000000 ; i++)
-            {x++; y+=2;}
-        }
-
+        #pragma omp atomic
+        x++;
     }
-    printf("x = %d, y = %d\n", x,y);
-    if(x != 2000000 || y != 4000000) return 1;
+    printf("x = %d\n", x);
+    if(x != 10000000) return 1;
     return 0;
 }

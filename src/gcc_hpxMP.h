@@ -16,4 +16,25 @@ xexpand(KMP_API_NAME_GOMP_TASKWAIT)(void);
 
 extern "C" int
 xexpand(KMP_API_NAME_GOMP_SINGLE_START)(void);
+
+extern "C" void
+xexpand(KMP_API_NAME_GOMP_BARRIER)(void);
+
+extern "C" void
+xexpand(KMP_API_NAME_GOMP_CRITICAL_START)(void);
+
+extern "C" void
+xexpand(KMP_API_NAME_GOMP_CRITICAL_END)(void);
+
+extern "C" void
+xexpand(KMP_API_NAME_GOMP_CRITICAL_NAME_START)(void** ptr);
+
+extern "C" void
+xexpand(KMP_API_NAME_GOMP_CRITICAL_NAME_END)(void** ptr);
+
+extern "C" void
+xexpand(KMP_API_NAME_GOMP_ATOMIC_START)(void);
+
+extern "C" void
+xexpand(KMP_API_NAME_GOMP_ATOMIC_END)(void);
 #endif //HPXMP_GCC_HPXMP_H

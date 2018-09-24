@@ -1,4 +1,5 @@
 #include "ompt-internal.h"
+#include "kmp_atomic.h"
 #include "intel_hpxMP.h"
 #include "gcc_hpxMP.h"
 #include <boost/shared_ptr.hpp>
@@ -83,14 +84,67 @@ void
 xexpand(KMP_API_NAME_GOMP_TASKWAIT)(void)
 {
 //    printf("GOMP_TASKWAIT\n");
-    __kmpc_omp_taskwait(nullptr, NULL);
+    __kmpc_omp_taskwait(nullptr, 0);
 }
 
 int
 xexpand(KMP_API_NAME_GOMP_SINGLE_START)(void)
 {
 //    printf("SINGLE_START\n");
-    return __kmpc_single(nullptr, NULL);
+    return __kmpc_single(nullptr, 0);
+}
+
+void
+xexpand(KMP_API_NAME_GOMP_BARRIER)(void)
+{
+//    printf("GOMP_BARRIER\n");
+    __kmpc_barrier(nullptr, 0);
+}
+
+void
+xexpand(KMP_API_NAME_GOMP_CRITICAL_START)(void)
+{
+//    printf("GOMP_CRITICAL_START\n");
+    __kmpc_critical(nullptr, 0, nullptr);
+}
+
+
+void
+xexpand(KMP_API_NAME_GOMP_CRITICAL_END)(void)
+{
+//    printf("GOMP_CRITICAL_END\n");
+    __kmpc_end_critical(nullptr, 0, nullptr);
+}
+
+void
+xexpand(KMP_API_NAME_GOMP_CRITICAL_NAME_START)(void **pptr)
+{
+//    printf("GOMP_CRITICAL_NAME_START\n");
+    __kmpc_critical(nullptr, 0, nullptr);
+}
+
+
+void
+xexpand(KMP_API_NAME_GOMP_CRITICAL_NAME_END)(void **pptr)
+{
+//    printf("GOMP_CRITICAL_NAME_END\n");
+    __kmpc_end_critical(nullptr, 0, nullptr);
+}
+
+// not being called by gcc here and in openmp
+void
+xexpand(KMP_API_NAME_GOMP_ATOMIC_START)(void)
+{
+    printf("KMP_API_NAME_GOMP_ATOMIC_START\n");
+    __kmp_acquire_atomic_lock(&__kmp_atomic_lock, 0);
+}
+
+//not being called by gcc here and in openmp
+void
+xexpand(KMP_API_NAME_GOMP_ATOMIC_END)(void)
+{
+    printf("KMP_API_NAME_GOMP_ATOMIC_END\n");
+    __kmp_release_atomic_lock(&__kmp_atomic_lock, 0);
 }
 
 // GOMP_1.0 aliases

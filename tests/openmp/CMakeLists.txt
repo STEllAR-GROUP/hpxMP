@@ -6,6 +6,7 @@
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fopenmp")
 set(tests
         old-fib
+        omp-atomic
         omp-crit
         omp-firstprivate
         omp-fib
