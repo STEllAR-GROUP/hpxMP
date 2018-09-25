@@ -1,6 +1,7 @@
+// Copyright (c) 2018 Tianyi Zhang
 //
-// Created by tianyi on 9/17/18.
-//
+// Distributed under the Boost Software License, Version 1.0. (See accompanying
+// file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
 #ifndef HPXMP_GCC_HPXMP_H
 #define HPXMP_GCC_HPXMP_H
@@ -43,4 +44,10 @@ xexpand(KMP_API_NAME_GOMP_ATOMIC_START)(void);
 
 extern "C" void
 xexpand(KMP_API_NAME_GOMP_ATOMIC_END)(void);
+
+extern "C" void
+xexpand(KMP_API_NAME_GOMP_ORDERED_START)(void);
+
+extern "C" void
+xexpand(KMP_API_NAME_GOMP_ORDERED_END)(void);
 #endif //HPXMP_GCC_HPXMP_H

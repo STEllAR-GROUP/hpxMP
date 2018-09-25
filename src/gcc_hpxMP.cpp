@@ -2,6 +2,7 @@
 #include "kmp_atomic.h"
 #include "intel_hpxMP.h"
 #include "gcc_hpxMP.h"
+#include "loop_schedule.h"
 #include <boost/shared_ptr.hpp>
 #include <iostream>
 #include <assert.h>
@@ -131,6 +132,20 @@ void xexpand(KMP_API_NAME_GOMP_SINGLE_COPY_END)(void *data)
     hpx_backend->barrier_wait();
 }
 
+void
+xexpand(KMP_API_NAME_GOMP_ORDERED_START)(void)
+{
+    int gtid = hpx_backend->get_thread_num();
+    __kmpc_ordered(nullptr, gtid);
+}
+
+
+void
+xexpand(KMP_API_NAME_GOMP_ORDERED_END)(void)
+{
+    __kmpc_end_ordered(nullptr, 0);
+}
+
 //
 // The parallel contruct
 //
@@ -196,6 +211,7 @@ void
 xexpand(KMP_API_NAME_GOMP_TASK)(void (*func)(void *), void *data, void (*copy_func)(void *, void *),
                                 long arg_size, long arg_align, bool if_cond, unsigned gomp_flags){
 //    printf("GOMP_TASK\n");
+    start_backend();
     int gtid = hpx_backend->get_thread_num();
 
     kmp_task_t *task = __kmpc_omp_task_alloc(nullptr, gtid, 0,
