@@ -8,7 +8,7 @@ int spawn_children( int depth, int num_children ) {
     }
     int i;
     for( i = 0; i < num_children; i++ ) { 
-#pragma omp task untied firstprivate(i) shared(partial_sum)
+#pragma omp task firstprivate(i) shared(partial_sum)
         partial_sum[i] = spawn_children( depth-1, num_children );
     }
 #pragma omp taskwait
@@ -22,8 +22,8 @@ int spawn_children( int depth, int num_children ) {
 
 int main(int argc, char **argv) 
 {
-    int depth = 10;
-    int breadth = 8;
+    int depth = 6;
+    int breadth = 4;
     int total = 0;
     if(argc > 1) {
          depth = atoi(argv[1]);
@@ -33,7 +33,7 @@ int main(int argc, char **argv)
     }
 #pragma omp parallel
 #pragma omp single nowait
-#pragma omp task untied
+#pragma omp task
     total = spawn_children(depth, breadth);
 
     printf("depth   %d\n", depth);

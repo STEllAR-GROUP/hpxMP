@@ -145,12 +145,23 @@ parallel_region* hpx_runtime::get_team()
     return team;
 }
 
+bool hpx_runtime::set_thread_data_check() {
+    omp_task_data *data;
+    if (hpx::threads::get_self_ptr()) {
+        data = reinterpret_cast<omp_task_data *>(get_thread_data(get_self_id()));
+        if (!data)
+            return true;
+    }
+    return false;
+}
+
 omp_task_data* hpx_runtime::get_task_data()
 {
     omp_task_data *data;
     if(hpx::threads::get_self_ptr()) {
         data = reinterpret_cast<omp_task_data*>(get_thread_data(get_self_id()));
         if(!data) {
+            std::cerr<<"trying to get null hpx thread data\n";
             data = initial_thread.get();
         }
     } else {
@@ -296,7 +307,8 @@ void task_setup( int gtid, kmp_task_t *task, omp_icv icv,
 #ifndef OMP_COMPLIANT
     team->num_tasks--;
 #endif
-    delete[] (char*)task;
+    if(task->part_id ==0)
+        delete[] (char*)task;
 #if HPXMP_HAVE_OMPT
     ompt_task_status_t status_fin = ompt_task_complete;
     /* let OMPT know that we're returning to the callee task */
@@ -306,6 +318,8 @@ void task_setup( int gtid, kmp_task_t *task, omp_icv icv,
             my_task_data, status_fin, prior_task_data);
     }
 #endif
+//  make sure nothing is accessing this thread data after task_data got destroyed
+    set_thread_data( get_self_id(), reinterpret_cast<size_t>(nullptr));
 }
 
 #ifdef OMP_COMPLIANT
@@ -331,7 +345,7 @@ void hpx_runtime::create_task( kmp_routine_entry_t task_func, int gtid, kmp_task
 {
     auto *current_task = get_task_data();
 
-    if(current_task->team->num_threads > 1) {
+    if(current_task->team->num_threads > 0) {
 #ifdef OMP_COMPLIANT
         if(current_task->in_taskgroup) {
             hpx::apply( *(current_task->tg_exec), tg_task_setup, gtid, thunk, current_task->icv,
@@ -348,10 +362,11 @@ void hpx_runtime::create_task( kmp_routine_entry_t task_func, int gtid, kmp_task
         hpx::apply(task_setup, gtid, thunk, current_task->icv,
                     current_task->num_child_tasks, current_task->team );
 #endif
-    } else {
-        *(current_task->num_child_tasks) += 1;
-        task_setup(gtid, thunk, current_task->icv, current_task->num_child_tasks, current_task->team);
     }
+//    else {
+//        *(current_task->num_child_tasks) += 1;
+//        task_setup(gtid, thunk, current_task->icv, current_task->num_child_tasks, current_task->team);
+//    }
 }
 
 void df_task_wrapper( int gtid, kmp_task_t *task, omp_icv icv,

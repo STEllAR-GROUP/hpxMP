@@ -102,10 +102,12 @@ typedef ompt_start_tool_result_t* (
 static ompt_start_tool_result_t* ompt_try_start_tool(
     unsigned int omp_version, const char* runtime_version)
 {
-    ompt_start_tool_result_t* ret = NULL;
-    ompt_start_tool_t start_tool = NULL;
+    ompt_start_tool_result_t* ret = nullptr;
+    ompt_start_tool_t start_tool = nullptr;
     ret = ompt_start_tool(omp_version, runtime_version);
-    return ret;
+    if(ret != nullptr)
+        return ret;
+    return nullptr;
 }
 
 void ompt_pre_init()
@@ -349,4 +351,23 @@ void on_thread_stop(std::size_t num, char const* name)
             }
         }
     }
+}
+/*****************************************************************************
+ * fixing ompt_start_tool symbol lookup error
+ ***************************************************************************/
+#define OMPT_WEAK_ATTRIBUTE __attribute__((weak))
+
+_OMP_EXTERN OMPT_WEAK_ATTRIBUTE ompt_start_tool_result_t *
+ompt_start_tool(unsigned int omp_version, const char *runtime_version) {
+    ompt_start_tool_result_t *ret = NULL;
+    // Search next symbol in the current address space. This can happen if the
+    // runtime library is linked before the tool. Since glibc 2.2 strong symbols
+    // don't override weak symbols that have been found before unless the user
+    // sets the environment variable LD_DYNAMIC_WEAK.
+    ompt_start_tool_t next_tool =
+            (ompt_start_tool_t)dlsym(RTLD_NEXT, "ompt_start_tool");
+    if (next_tool) {
+        ret = next_tool(omp_version, runtime_version);
+    }
+    return ret;
 }

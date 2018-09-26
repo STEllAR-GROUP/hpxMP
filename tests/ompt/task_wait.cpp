@@ -1,3 +1,8 @@
+//  Copyright (c) 2018 Tianyi Zhang
+//
+//  Distributed under the Boost Software License, Version 1.0. (See accompanying
+//  file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
+
 #include <unistd.h>
 #include "callback.h"
 // with taskwait, the current task waits only for its child tasks. With taskgroup,
@@ -13,7 +18,7 @@ int main() {
                 {
                     printf("task1\n");
 #pragma omp task
-                    sleep(2);
+                    sleep(1);
                     printf("task2\n");
 // current task suspended until task 2 completed
 #pragma omp taskwait
