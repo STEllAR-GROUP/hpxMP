@@ -38,6 +38,6 @@ int test_omp_single_copyprivate()
 int main()
 {
     if(test_omp_single_copyprivate())
-        printf("result is correct\n");
-    return 0;
+        return 0;
+    return 1;
 }

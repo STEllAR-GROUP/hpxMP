@@ -50,6 +50,8 @@ int main() {
     num_nodes = parTreeSearch( 0, 42 );
 
     printf("num nodes = %d\n", num_nodes);
+    if(num_nodes != 6)
+        return 1;
 
     return 0;
 }

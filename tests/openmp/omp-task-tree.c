@@ -39,6 +39,8 @@ int main(int argc, char **argv)
     printf("depth   %d\n", depth);
     printf("breadth %d\n", breadth);
     printf("total   %d\n", total);
+    if(total != 4096)
+        return 1;
     return 0;
 }
 

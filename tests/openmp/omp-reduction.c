@@ -5,9 +5,10 @@ int main() {
 #pragma omp parallel for reduction (+:sum)
     for(i=1;i<=num_steps;i++)
     {   
-        sum += 1.0+i*i;
+        sum += i;
         printf("i = %d, sum = %d, thread = %d\n", i, sum, omp_get_thread_num());
     }
     printf("sum = %d\n", sum);
+    if(sum != 120) return 1;
     return 0;
 }

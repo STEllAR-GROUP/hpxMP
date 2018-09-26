@@ -24,5 +24,7 @@ int main() {
         }
     }
     printf("final x = %d\n", x);
+    if(x != 11)
+        return 1;
     return 0;
 }

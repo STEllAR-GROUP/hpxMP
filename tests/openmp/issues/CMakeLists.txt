@@ -5,29 +5,9 @@
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fopenmp")
 set(tests
-        omp-barrier
-        omp-for
-        omp-for-decrement
-        omp-for-dynamic
-        omp-for-nested
-        omp-for-nowait
-        omp-for-private
-        omp-for-simple
-        omp-lu-orig
-        omp-master
-        omp-nested-par
-        omp-not-thrdprvt
-        omp-num-thread
-        omp-par-for
-        omp-par-single
-        omp-sections
-        omp-simple-task
-        omp-single
-        omp-task.simple
-        omp-task-fp
-        omp-thrdprvt
-        omp-threadprivate
-        #task_spawn_time
+        task_no_parallel
+        task_tree_simple
+        task_untied
         )
 
 enable_testing()
