@@ -43,3 +43,4 @@ foreach(test ${tests})
 endforeach()
 
 add_subdirectory(issues)
+add_subdirectory(adding_c++)
