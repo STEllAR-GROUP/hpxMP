@@ -7,6 +7,7 @@
 
 #include <sys/time.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 long fib1(int k);
 long fib2(int k);

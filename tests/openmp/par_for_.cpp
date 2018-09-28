@@ -4,15 +4,20 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
 #include <iostream>
-#include <vector>
 #include <omp.h>
 
 int main() {
-#pragma omp parallel num_threads(3)
+    int result[10];
+#pragma omp parallel for
+    for(int i = 0; i < 10; i++)
     {
-//#pragma omp master
-//        printf("this should be thread 0: %d\n", omp_get_thread_num());
-        printf("all threads: %d\n", omp_get_thread_num());
+        result[i] = i;
+    }
+
+    for(int i = 0; i < 10; i++)
+    {
+        if(result[i] != i)
+            return 1;
     }
     return 0;
 }

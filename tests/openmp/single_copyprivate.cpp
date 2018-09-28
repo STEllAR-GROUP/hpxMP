@@ -1,6 +1,14 @@
+//  Copyright (c) 2018 Tianyi Zhang
+//  Adapted from kempj omp-single-copyprivate.c
+//
+//  Distributed under the Boost Software License, Version 1.0. (See accompanying
+//  file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 #include <stdio.h>
 
-const int LOOPCOUNT = 10;
+const int LOOPCOUNT = 4;
+
+int var2;
+#pragma omp threadprivate(var2)
 
 int j;
 #pragma omp threadprivate(j)
@@ -18,6 +26,7 @@ int test_omp_single_copyprivate()
             {
                 nr_iterations++;
                 j = i;
+                var2 = j;
             }
 #pragma omp critical
             {
@@ -34,9 +43,6 @@ int test_omp_single_copyprivate()
 int main()
 {
     if(test_omp_single_copyprivate())
-    {
-        printf("result is correct\n");
         return 0;
-    }
     return 1;
 }

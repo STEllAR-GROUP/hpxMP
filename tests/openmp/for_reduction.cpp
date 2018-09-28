@@ -1,4 +1,11 @@
+//  Copyright (c) 2018 Tianyi Zhang
+//  Adapted from kempj omp-reduction.c
+//
+//  Distributed under the Boost Software License, Version 1.0. (See accompanying
+//  file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
+
 #include <stdio.h>
+#include <omp.h>
 int main() {
     int i, num_steps=15, x, sum = 0, pi;
 
