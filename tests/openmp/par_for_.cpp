@@ -6,17 +6,18 @@
 #include <iostream>
 #include <omp.h>
 
-int main() {
+int main()
+{
     int result[10];
 #pragma omp parallel for
-    for(int i = 0; i < 10; i++)
+    for (int i = 0; i < 10; i++)
     {
         result[i] = i;
     }
 
-    for(int i = 0; i < 10; i++)
+    for (int i = 0; i < 10; i++)
     {
-        if(result[i] != i)
+        if (result[i] != i)
             return 1;
     }
     return 0;

@@ -6,7 +6,8 @@
 
 #include <stdio.h>
 
-int main() {
+int main()
+{
     int x = 10, i = 0;
 #pragma omp parallel
     {
@@ -19,18 +20,18 @@ int main() {
             }
 #pragma omp taskwait
 
-            for(i = 0; i < 4; i++) 
+            for (i = 0; i < 4; i++)
             {
 #pragma omp task firstprivate(i)
                 {
-                    printf("x%d = %d\n", i, x + i );
+                    printf("x%d = %d\n", i, x + i);
                 }
             }
 #pragma omp taskwait
         }
     }
     printf("final x = %d\n", x);
-    if(x != 11)
+    if (x != 11)
         return 1;
     return 0;
 }

@@ -5,17 +5,18 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
 #include <iostream>
-#include <vector>
 #include <omp.h>
+#include <vector>
 
-int main() {
-    int i,j;
+int main()
+{
+    int i, j;
     int result_1[10];
     std::vector<int> result_2;
 
     printf("\nStatic loop chunk size 2\n");
 #pragma omp parallel for schedule(dynamic)
-    for(i = 0; i < 10; i++)
+    for (i = 0; i < 10; i++)
     {
         printf("%d, %d\n ", i, omp_get_thread_num());
         result_1[i] = i;
@@ -23,7 +24,7 @@ int main() {
 
     printf("\nStatic Ordered loop\n");
 #pragma omp parallel for schedule(dynamic) ordered
-    for(i = 0; i < 10; i++)
+    for (i = 0; i < 10; i++)
     {
 #pragma omp ordered
         {
@@ -32,15 +33,15 @@ int main() {
         }
     }
 
-    for(i = 0; i < 10; i++)
+    for (i = 0; i < 10; i++)
     {
-        if(result_1[i] != i)
+        if (result_1[i] != i)
             return 1;
     }
 
-    for(i = 0; i < 10; i++)
+    for (i = 0; i < 10; i++)
     {
-        if(result_2[i] != i)
+        if (result_2[i] != i)
             return 1;
     }
     return 0;

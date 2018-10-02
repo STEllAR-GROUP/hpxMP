@@ -13,7 +13,7 @@ int var2;
 int j;
 #pragma omp threadprivate(j)
 
-int test_omp_single_copyprivate()                                   
+int test_omp_single_copyprivate()
 {
     int result = 0;
     int nr_iterations = 0;
@@ -35,14 +35,15 @@ int test_omp_single_copyprivate()
 #pragma omp barrier
         }
     }
-    if(!((result == 0) && (nr_iterations == LOOPCOUNT))){
-        printf("result = %d, nr_iterations = %d\n",result, nr_iterations);
+    if (!((result == 0) && (nr_iterations == LOOPCOUNT)))
+    {
+        printf("result = %d, nr_iterations = %d\n", result, nr_iterations);
     }
     return ((result == 0) && (nr_iterations == LOOPCOUNT));
 }
 int main()
 {
-    if(test_omp_single_copyprivate())
+    if (test_omp_single_copyprivate())
         return 0;
     return 1;
 }

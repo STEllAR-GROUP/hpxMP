@@ -8,17 +8,19 @@
 int main()
 {
     int sum0 = 10;
-    int correct =1;
+    int correct = 1;
 
 #pragma omp parallel firstprivate(sum0) shared(correct)
     {
-        sum0+=1;
+        sum0 += 1;
         printf("%d\n", sum0);
-        if(sum0!=11) correct = 0;
+        if (sum0 != 11)
+            correct = 0;
     }
     printf("out side the parallel region sum0 = %d", sum0);
 
-    if(sum0!=10 || correct ==0) return 1;
+    if (sum0 != 10 || correct == 0)
+        return 1;
 
     return 0;
 }

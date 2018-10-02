@@ -4,10 +4,10 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
 #include <iostream>
-#include <vector>
 #include <omp.h>
-#include <string>
 #include <sstream>
+#include <string>
+#include <vector>
 
 int main()
 {
@@ -19,27 +19,32 @@ int main()
 #pragma omp single
         num_threads = omp_get_num_threads();
 #pragma omp critical
-        result<<"0";
+        result << "0";
 #pragma omp barrier
 #pragma omp critical
-        result<<"1";
+        result << "1";
 #pragma omp barrier
 #pragma omp critical
-        result<<"2";
+        result << "2";
 #pragma omp barrier
 #pragma omp critical
-        result<<"3";
+        result << "3";
     }
 
-    for(int i = 0; i<4; i++)
-        for(int j = 0; j<num_threads; j++){
-            if(i == 0) vec.push_back('0');
-            if(i == 1) vec.push_back('1');
-            if(i == 2) vec.push_back('2');
-            if(i == 3) vec.push_back('3');
+    for (int i = 0; i < 4; i++)
+        for (int j = 0; j < num_threads; j++)
+        {
+            if (i == 0)
+                vec.push_back('0');
+            if (i == 1)
+                vec.push_back('1');
+            if (i == 2)
+                vec.push_back('2');
+            if (i == 3)
+                vec.push_back('3');
         }
     std::string result_expected(vec.begin(), vec.end());
-    if(result.str() != result_expected)
+    if (result.str() != result_expected)
         return 1;
     return 0;
 }

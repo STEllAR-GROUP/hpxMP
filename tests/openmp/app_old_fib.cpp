@@ -6,15 +6,17 @@
 
 #include <stdio.h>
 
-int fib(int n) {
+int fib(int n)
+{
     int f1, f2, f;
-    if(n < 2) {
+    if (n < 2)
+    {
         return n;
     }
 #pragma omp task shared(f1)
-    f1 = fib(n-1);
+    f1 = fib(n - 1);
 #pragma omp task shared(f2)
-    f2 = fib(n-2);
+    f2 = fib(n - 2);
 
 #pragma omp taskwait
     f = f1 + f2;
@@ -22,8 +24,9 @@ int fib(int n) {
     return f;
 }
 
-int main() {
-    int f=0;
+int main()
+{
+    int f = 0;
 #pragma omp parallel
     {
 #pragma omp single
@@ -32,6 +35,7 @@ int main() {
         }
     }
     printf("fib = %d\n", f);
-    if(f != 21) return 1;
+    if (f != 21)
+        return 1;
     return 0;
 }
