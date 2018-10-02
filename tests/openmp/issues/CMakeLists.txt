@@ -8,6 +8,7 @@ set(tests
         task_no_parallel
         task_tree_simple
         task_untied
+        get_thread_num
         )
 
 enable_testing()
