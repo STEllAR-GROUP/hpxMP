@@ -11,7 +11,7 @@ int main()
 #pragma omp parallel num_threads(2)
     {
         printf("Hello World\n");
-#pragma omp parallel num_threads(3)
+#pragma omp parallel num_threads(2)
         {
             printf("nested parallel region\n");
         }
