@@ -50,4 +50,15 @@ xexpand(KMP_API_NAME_GOMP_ORDERED_START)(void);
 
 extern "C" void
 xexpand(KMP_API_NAME_GOMP_ORDERED_END)(void);
+
+extern "C" void
+xexpand(KMP_API_NAME_GOMP_PARALLEL_LOOP_DYNAMIC)(void (*task)(void *),
+                                                 void *data, unsigned num_threads, long lb, long ub, long str, long chunk_sz,
+                                                 unsigned flags);
+
+extern "C" int
+xexpand(KMP_API_NAME_GOMP_LOOP_DYNAMIC_NEXT)(long *p_lb, long *p_ub);
+
+extern "C" void
+xexpand(KMP_API_NAME_GOMP_LOOP_END_NOWAIT)(void);
 #endif //HPXMP_GCC_HPXMP_H

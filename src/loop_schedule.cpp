@@ -231,14 +231,15 @@ int kmp_next( int gtid, int *p_last, T *p_lower, T *p_upper, D *p_stride ) {
             //only used for ordered
             loop_sched->first_iter[gtid] = loop_id;
             loop_sched->last_iter[gtid] = loop_sched->first_iter[gtid] + loop_sched->chunk;
-            *p_last = 0;
-
+            if(p_last)
+                *p_last = 0;
             if(*p_lower >  static_cast<T>(loop_sched->upper)) {
                 return 0;
             }
             if(*p_upper >  static_cast<T>(loop_sched->upper)) {
                 *p_upper = loop_sched->upper;
-                *p_last = 1;
+                if(p_last)
+                    *p_last = 1;
             }
             return 1;
 

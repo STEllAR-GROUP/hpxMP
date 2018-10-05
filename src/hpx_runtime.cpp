@@ -584,11 +584,11 @@ void thread_setup( invoke_func kmp_invoke, microtask_t thread_func,
             }
         }
 #endif
-#ifdef HPXMP_HAVE_GCC
-    ((void(*)(void*)) argv[0])(argv[1]);
-#else
+//#ifdef HPXMP_HAVE_GCC
+//    ((void(*)(void*)) argv[0])(argv[1]);
+//#else
     kmp_invoke(thread_func, tid, tid, argc, argv);
-#endif
+//#endif
 #if HPXMP_HAVE_OMPT
     if (ompt_enabled.enabled) {
         if (ompt_enabled.ompt_callback_implicit_task) {

@@ -157,6 +157,19 @@ __kmp_GOMP_microtask_wrapper(int *gtid, int *npr, void (*task)(void *),
     task(data);
 }
 
+void
+__kmp_GOMP_parallel_microtask_wrapper(int *gtid, int *npr,
+                                      void (*task)(void *), void *data,
+                                      unsigned num_threads, ident_t *loc,
+                                      enum sched_type schedule, long start,
+                                      long end, long incr,
+                                      long chunk_size) {
+    // Intialize the loop worksharing construct.
+    __kmpc_dispatch_init_4(nullptr, *gtid, schedule, start, end, incr, chunk_size);
+    // Now invoke the microtask.
+    task(data);
+}
+
 //Static if not in debug?
 void
 __kmp_GOMP_fork_call(void(*unwrapped_task)(void *), microtask_t wrapper, int argc, ...) {
@@ -276,6 +289,43 @@ xexpand(KMP_API_NAME_GOMP_PARALLEL)(void (*task)(void *), void *data, unsigned n
     my_data->set_threads_requested(num_threads);
 
     __kmp_GOMP_fork_call(task,(microtask_t )__kmp_GOMP_microtask_wrapper, 2, task, data);
+}
+
+void
+xexpand(KMP_API_NAME_GOMP_PARALLEL_LOOP_DYNAMIC)(void (*task)(void *),
+    void *data, unsigned num_threads, long lb, long ub, long str, long chunk_sz,
+    unsigned flags){
+//    printf("KMP_API_NAME_GOMP_PARALLEL_LOOP_DYNAMIC\n");
+
+    //from gomp parallel
+    start_backend();
+    //__kmpc_push_num_threads
+    omp_task_data * my_data = hpx_backend->get_task_data();
+    my_data->set_threads_requested(num_threads);
+
+    __kmp_GOMP_fork_call(task,
+        (microtask_t) __kmp_GOMP_parallel_microtask_wrapper, 9, task, data,
+        num_threads, nullptr, kmp_sch_dynamic_chunked, lb,
+        (str > 0) ? (ub - 1) : (ub + 1), str, chunk_sz);
+}
+
+int
+xexpand(KMP_API_NAME_GOMP_LOOP_DYNAMIC_NEXT)(long *p_lb, long *p_ub){
+//    printf("KMP_API_NAME_GOMP_LOOP_DYNAMIC_NEXT\n");
+    int status;
+    long stride;
+    int gtid = hpx_backend->get_thread_num();
+    {} status = __kmpc_dispatch_next_4(nullptr, gtid, NULL, (int32_t *)p_lb,
+                                         (int32_t *)p_ub, (int32_t *)&stride);
+    if (status) {
+      *p_ub += (stride > 0) ? 1 : -1;
+    }
+
+    return status;
+}
+
+void
+xexpand(KMP_API_NAME_GOMP_LOOP_END_NOWAIT)(void) {
 }
 
 // GOMP_1.0 aliases

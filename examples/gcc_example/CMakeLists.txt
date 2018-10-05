@@ -11,7 +11,7 @@ set(tests
         task_wait_single_gcc
         private_shared_gcc
         omp-copyprivate
-        omp-for_gcc
+        omp-for-dynamic_gcc
         )
 
 enable_testing()

@@ -2,7 +2,7 @@
 
 int main() {
 #pragma omp parallel
-#pragma omp for schedule(static,2)
+#pragma omp for schedule(dynamic)
     for(int i = 0; i < 10; i++)
     {
         printf("Hello World #%d\n", i );
