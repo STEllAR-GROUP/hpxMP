@@ -295,7 +295,7 @@ void
 xexpand(KMP_API_NAME_GOMP_PARALLEL_LOOP_DYNAMIC)(void (*task)(void *),
     void *data, unsigned num_threads, long lb, long ub, long str, long chunk_sz,
     unsigned flags){
-//    printf("KMP_API_NAME_GOMP_PARALLEL_LOOP_DYNAMIC\n");
+    printf("KMP_API_NAME_GOMP_PARALLEL_LOOP_DYNAMIC\n");
 
     //from gomp parallel
     start_backend();
