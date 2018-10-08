@@ -8,7 +8,7 @@
 int main()
 {
     int var_i = 0, var_j = 0;
-#pragma omp parallel num_threads(5)
+#pragma omp parallel num_threads(2)
     {
 #pragma omp task shared(var_i) firstprivate(var_j)
         {
@@ -19,7 +19,7 @@ int main()
         }
     }
     //check number of task created and ended
-    if (count_task_create != 6 && count_task_complete != 6)
+    if (count_task_create != 3 && count_task_complete != 3)
     {
         return 1;
     }
@@ -31,13 +31,13 @@ int main()
             return 1;
     }
     //check task create num of task type
-    if (task_type[1] != 1 || task_type[4] != 5)
+    if (task_type[1] != 1 || task_type[4] != 2)
         return 1;
 
     //check return adress of task create(only check if the count is right)
     for (auto it = return_address.begin(); it != return_address.end(); ++it)
     {
-        if (it->second != 1 && it->second != 5)
+        if (it->second != 1 && it->second != 2)
             return 1;
     }
 

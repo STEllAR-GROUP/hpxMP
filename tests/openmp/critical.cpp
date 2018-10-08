@@ -5,8 +5,9 @@
 
 #include <stdio.h>
 
-int main() {
-    int x=0, y=0, z=0;
+int main()
+{
+    int x = 0, y = 0, z = 0;
 #pragma omp parallel num_threads(2)
     {
 #pragma omp critical
@@ -16,7 +17,8 @@ int main() {
             z += 3;
         }
     }
-    printf("x = %d,y = %d, z=%d\n", x,y,z);
-    if(x != 2 || y!=4 ||z != 6) return 1;
+    printf("x = %d,y = %d, z=%d\n", x, y, z);
+    if (x != 2 || y != 4 || z != 6)
+        return 1;
     return 0;
 }
