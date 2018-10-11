@@ -553,7 +553,7 @@ void thread_setup( invoke_func kmp_invoke, microtask_t thread_func,
                    parallel_region *team, omp_task_data *parent,
                    mutex_type& barrier_mtx,
                    hpx::lcos::local::condition_variable_any& cond,
-                   atomic<int>& running_threads )
+                   int& running_threads )
 {
     omp_task_data task_data(tid, team, parent);
 
@@ -608,9 +608,11 @@ void thread_setup( invoke_func kmp_invoke, microtask_t thread_func,
     //  reference their parents metadata(task_data above).
     //This combined with the waiting on child tasks above fufills the requirements
     //  of an OpenMP barrier.
+    std::unique_lock<mutex_type> lk(barrier_mtx);
     if(--running_threads == 0) {
         //hpx::lcos::local::spinlock::scoped_lock lk(barrier_mtx);
         //std::unique_lock<mutex_type> lk(barrier_mtx);
+        hpx::util::ignore_while_checking<std::unique_lock<mutex_type> > il(&lk);
         cond.notify_all();
     }
 }
@@ -641,8 +643,7 @@ void fork_worker( invoke_func kmp_invoke, microtask_t thread_func,
 #endif
     hpx::lcos::local::condition_variable_any  cond;
     mutex_type barrier_mtx;
-    atomic<int> running_threads;
-    running_threads = parent->threads_requested;
+    int running_threads = parent->threads_requested;
 
     for( int i = 0; i < parent->threads_requested; i++ ) {
         hpx::applier::register_thread_nullary(

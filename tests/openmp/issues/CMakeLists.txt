@@ -9,6 +9,7 @@ set(tests
         task_tree_simple
         task_untied
         get_thread_num
+        parallel_multi
         )
 
 enable_testing()
