@@ -3,13 +3,13 @@
 # Distributed under the Boost Software License, Version 1.0. (See accompanying
 # file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fopenmp")
+set(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -fopenmp")
 set(tests
+        get_thread_num
+        parallel_multi
         task_no_parallel
         task_tree_simple
         task_untied
-        get_thread_num
-        parallel_multi
         )
 
 enable_testing()
@@ -28,7 +28,7 @@ macro(do_test name)
 endmacro(do_test)
 
 foreach(test ${tests})
-    set(sources ${test}.c)
+    set(sources ${test}.cpp)
     add_executable(${test} ${sources})
     do_test(${test})
 endforeach()
