@@ -150,13 +150,18 @@ xexpand(KMP_API_NAME_GOMP_ORDERED_END)(void)
 // The parallel contruct
 //
 
-//Static if not in debug?
+#if RELEASE_BUILD
+static
+#endif
 void
 __kmp_GOMP_microtask_wrapper(int *gtid, int *npr, void (*task)(void *),
                              void *data) {
     task(data);
 }
 
+#if RELEASE_BUILD
+static
+#endif
 void
 __kmp_GOMP_parallel_microtask_wrapper(int *gtid, int *npr,
                                       void (*task)(void *), void *data,
@@ -170,7 +175,10 @@ __kmp_GOMP_parallel_microtask_wrapper(int *gtid, int *npr,
     task(data);
 }
 
-//Static if not in debug?
+#if RELEASE_BUILD
+static
+#endif
+
 void
 __kmp_GOMP_fork_call(void(*unwrapped_task)(void *), microtask_t wrapper, int argc, ...) {
     va_list ap;
@@ -186,6 +194,19 @@ __kmp_GOMP_fork_call(void(*unwrapped_task)(void *), microtask_t wrapper, int arg
     hpx_backend->fork(__kmp_invoke_microtask, (microtask_t) wrapper, argc, args);
 
 }
+
+//TODO:
+static void
+__kmp_GOMP_serialized_parallel(ident_t *loc, kmp_int32 gtid, void (*task)(void *)){}
+
+//seems not needed anymore
+void
+xexpand(KMP_API_NAME_GOMP_PARALLEL_START)(void (*task)(void *), void *data, unsigned num_threads) {}
+
+//seems not needed anymore
+void
+xexpand(KMP_API_NAME_GOMP_PARALLEL_END)(void) {}
+
 
 //
 // Loop worksharing constructs
@@ -214,6 +235,90 @@ __kmp_GOMP_fork_call(void(*unwrapped_task)(void *), microtask_t wrapper, int arg
 // num and calculate the iteration space using the result.  It doesn't do this
 // with ordered static loop, so they can be checked.
 //
+
+//TODO:
+
+#define LOOP_START(func,schedule)
+#define LOOP_RUNTIME_START(func,schedule)
+#define LOOP_NEXT(func,fini_code)
+
+LOOP_START(xexpand(KMP_API_NAME_GOMP_LOOP_STATIC_START), kmp_sch_static)
+LOOP_NEXT(xexpand(KMP_API_NAME_GOMP_LOOP_STATIC_NEXT), {})
+LOOP_START(xexpand(KMP_API_NAME_GOMP_LOOP_DYNAMIC_START), kmp_sch_dynamic_chunked)
+LOOP_NEXT(xexpand(KMP_API_NAME_GOMP_LOOP_DYNAMIC_NEXT), {})
+LOOP_START(xexpand(KMP_API_NAME_GOMP_LOOP_GUIDED_START), kmp_sch_guided_chunked)
+LOOP_NEXT(xexpand(KMP_API_NAME_GOMP_LOOP_GUIDED_NEXT), {})
+LOOP_RUNTIME_START(xexpand(KMP_API_NAME_GOMP_LOOP_RUNTIME_START), kmp_sch_runtime)
+LOOP_NEXT(xexpand(KMP_API_NAME_GOMP_LOOP_RUNTIME_NEXT), {})
+
+LOOP_START(xexpand(KMP_API_NAME_GOMP_LOOP_ORDERED_STATIC_START), kmp_ord_static)
+LOOP_NEXT(xexpand(KMP_API_NAME_GOMP_LOOP_ORDERED_STATIC_NEXT), \
+    { KMP_DISPATCH_FINI_CHUNK(&loc, gtid); })
+LOOP_START(xexpand(KMP_API_NAME_GOMP_LOOP_ORDERED_DYNAMIC_START), kmp_ord_dynamic_chunked)
+LOOP_NEXT(xexpand(KMP_API_NAME_GOMP_LOOP_ORDERED_DYNAMIC_NEXT), \
+    { KMP_DISPATCH_FINI_CHUNK(&loc, gtid); })
+LOOP_START(xexpand(KMP_API_NAME_GOMP_LOOP_ORDERED_GUIDED_START), kmp_ord_guided_chunked)
+LOOP_NEXT(xexpand(KMP_API_NAME_GOMP_LOOP_ORDERED_GUIDED_NEXT), \
+    { KMP_DISPATCH_FINI_CHUNK(&loc, gtid); })
+LOOP_RUNTIME_START(xexpand(KMP_API_NAME_GOMP_LOOP_ORDERED_RUNTIME_START), kmp_ord_runtime)
+LOOP_NEXT(xexpand(KMP_API_NAME_GOMP_LOOP_ORDERED_RUNTIME_NEXT), \
+    { KMP_DISPATCH_FINI_CHUNK(&loc, gtid); })
+
+
+void
+xexpand(KMP_API_NAME_GOMP_LOOP_END)(void) {}
+
+void
+xexpand(KMP_API_NAME_GOMP_LOOP_END_NOWAIT)(void) {}
+
+//TODO:
+//
+// Unsigned long long loop worksharing constructs
+//
+// These are new with gcc 4.4
+//
+
+#define LOOP_START_ULL(func,schedule)
+#define LOOP_RUNTIME_START_ULL(func,schedule)
+#define LOOP_NEXT_ULL(func,fini_code)
+
+LOOP_START_ULL(xexpand(KMP_API_NAME_GOMP_LOOP_ULL_STATIC_START), kmp_sch_static)
+LOOP_NEXT_ULL(xexpand(KMP_API_NAME_GOMP_LOOP_ULL_STATIC_NEXT), {})
+LOOP_START_ULL(xexpand(KMP_API_NAME_GOMP_LOOP_ULL_DYNAMIC_START), kmp_sch_dynamic_chunked)
+LOOP_NEXT_ULL(xexpand(KMP_API_NAME_GOMP_LOOP_ULL_DYNAMIC_NEXT), {})
+LOOP_START_ULL(xexpand(KMP_API_NAME_GOMP_LOOP_ULL_GUIDED_START), kmp_sch_guided_chunked)
+LOOP_NEXT_ULL(xexpand(KMP_API_NAME_GOMP_LOOP_ULL_GUIDED_NEXT), {})
+LOOP_RUNTIME_START_ULL(xexpand(KMP_API_NAME_GOMP_LOOP_ULL_RUNTIME_START), kmp_sch_runtime)
+LOOP_NEXT_ULL(xexpand(KMP_API_NAME_GOMP_LOOP_ULL_RUNTIME_NEXT), {})
+
+LOOP_START_ULL(xexpand(KMP_API_NAME_GOMP_LOOP_ULL_ORDERED_STATIC_START), kmp_ord_static)
+LOOP_NEXT_ULL(xexpand(KMP_API_NAME_GOMP_LOOP_ULL_ORDERED_STATIC_NEXT), \
+    { KMP_DISPATCH_FINI_CHUNK_ULL(&loc, gtid); })
+LOOP_START_ULL(xexpand(KMP_API_NAME_GOMP_LOOP_ULL_ORDERED_DYNAMIC_START), kmp_ord_dynamic_chunked)
+LOOP_NEXT_ULL(xexpand(KMP_API_NAME_GOMP_LOOP_ULL_ORDERED_DYNAMIC_NEXT), \
+    { KMP_DISPATCH_FINI_CHUNK_ULL(&loc, gtid); })
+LOOP_START_ULL(xexpand(KMP_API_NAME_GOMP_LOOP_ULL_ORDERED_GUIDED_START), kmp_ord_guided_chunked)
+LOOP_NEXT_ULL(xexpand(KMP_API_NAME_GOMP_LOOP_ULL_ORDERED_GUIDED_NEXT), \
+    { KMP_DISPATCH_FINI_CHUNK_ULL(&loc, gtid); })
+LOOP_RUNTIME_START_ULL(xexpand(KMP_API_NAME_GOMP_LOOP_ULL_ORDERED_RUNTIME_START), kmp_ord_runtime)
+LOOP_NEXT_ULL(xexpand(KMP_API_NAME_GOMP_LOOP_ULL_ORDERED_RUNTIME_NEXT), \
+    { KMP_DISPATCH_FINI_CHUNK_ULL(&loc, gtid); })
+
+//
+// Combined parallel / loop worksharing constructs
+//
+// There are no ull versions (yet).
+//
+//TODO:
+#define PARALLEL_LOOP_START(func, schedule, ompt_pre, ompt_post)
+PARALLEL_LOOP_START(xexpand(KMP_API_NAME_GOMP_PARALLEL_LOOP_STATIC_START),
+                    kmp_sch_static, OMPT_LOOP_PRE, OMPT_LOOP_POST)
+PARALLEL_LOOP_START(xexpand(KMP_API_NAME_GOMP_PARALLEL_LOOP_DYNAMIC_START),
+                    kmp_sch_dynamic_chunked, OMPT_LOOP_PRE, OMPT_LOOP_POST)
+PARALLEL_LOOP_START(xexpand(KMP_API_NAME_GOMP_PARALLEL_LOOP_GUIDED_START),
+                    kmp_sch_guided_chunked, OMPT_LOOP_PRE, OMPT_LOOP_POST)
+PARALLEL_LOOP_START(xexpand(KMP_API_NAME_GOMP_PARALLEL_LOOP_RUNTIME_START),
+                    kmp_sch_runtime, OMPT_LOOP_PRE, OMPT_LOOP_POST)
 
 
 //
@@ -274,8 +379,31 @@ xexpand(KMP_API_NAME_GOMP_TASKWAIT)(void)
 // the dynamically scheduled workshare, even if the sections aren't ordered.
 //
 
+//TODO:
+unsigned
+xexpand(KMP_API_NAME_GOMP_SECTIONS_START)(unsigned count) {}
+
+unsigned
+xexpand(KMP_API_NAME_GOMP_SECTIONS_NEXT)(void) {}
+
+void
+xexpand(KMP_API_NAME_GOMP_PARALLEL_SECTIONS_START)(void (*task) (void *), void *data,
+                                                   unsigned num_threads, unsigned count) {}
+
+void
+xexpand(KMP_API_NAME_GOMP_SECTIONS_END)(void) {}
+
+void
+xexpand(KMP_API_NAME_GOMP_SECTIONS_END_NOWAIT)(void) {}
+
+// libgomp has an empty function for GOMP_taskyield as of 2013-10-10
+void
+xexpand(KMP_API_NAME_GOMP_TASKYIELD)(void) {}
+
+
 
 // these are new GOMP_4.0 entry points
+
 void
 xexpand(KMP_API_NAME_GOMP_PARALLEL)(void (*task)(void *), void *data, unsigned num_threads, unsigned int flags) {
     printf("GOMP_PARALLEL\n");
@@ -290,6 +418,22 @@ xexpand(KMP_API_NAME_GOMP_PARALLEL)(void (*task)(void *), void *data, unsigned n
 
     __kmp_GOMP_fork_call(task,(microtask_t )__kmp_GOMP_microtask_wrapper, 2, task, data);
 }
+
+//TODO:
+void
+xexpand(KMP_API_NAME_GOMP_PARALLEL_SECTIONS)(void (*task) (void *), void *data,
+                                             unsigned num_threads, unsigned count, unsigned flags) {}
+//TODO:
+#define PARALLEL_LOOP(func, schedule, ompt_pre, ompt_post)
+
+PARALLEL_LOOP(xexpand(KMP_API_NAME_GOMP_PARALLEL_LOOP_STATIC), kmp_sch_static,
+              OMPT_LOOP_PRE, OMPT_LOOP_POST)
+//PARALLEL_LOOP(xexpand(KMP_API_NAME_GOMP_PARALLEL_LOOP_DYNAMIC), kmp_sch_dynamic_chunked,
+//              OMPT_LOOP_PRE, OMPT_LOOP_POST)
+PARALLEL_LOOP(xexpand(KMP_API_NAME_GOMP_PARALLEL_LOOP_GUIDED), kmp_sch_guided_chunked,
+              OMPT_LOOP_PRE, OMPT_LOOP_POST)
+PARALLEL_LOOP(xexpand(KMP_API_NAME_GOMP_PARALLEL_LOOP_RUNTIME), kmp_sch_runtime,
+              OMPT_LOOP_PRE, OMPT_LOOP_POST)
 
 void
 xexpand(KMP_API_NAME_GOMP_PARALLEL_LOOP_DYNAMIC)(void (*task)(void *),
@@ -324,9 +468,74 @@ xexpand(KMP_API_NAME_GOMP_LOOP_DYNAMIC_NEXT)(long *p_lb, long *p_ub){
     return status;
 }
 
+//TODO:
 void
-xexpand(KMP_API_NAME_GOMP_LOOP_END_NOWAIT)(void) {
+xexpand(KMP_API_NAME_GOMP_TASKGROUP_START)(void) {}
+
+void
+xexpand(KMP_API_NAME_GOMP_TASKGROUP_END)(void) {}
+
+#if RELEASE_BUILD
+static
+#endif
+kmp_int32 __kmp_gomp_to_omp_cancellation_kind(int gomp_kind) {}
+
+bool
+xexpand(KMP_API_NAME_GOMP_CANCELLATION_POINT)(int which) {}
+
+bool
+xexpand(KMP_API_NAME_GOMP_BARRIER_CANCEL)(void) {}
+
+bool
+xexpand(KMP_API_NAME_GOMP_CANCEL)(int which, bool do_cancel) {}
+
+bool
+xexpand(KMP_API_NAME_GOMP_SECTIONS_END_CANCEL)(void) {}
+
+bool
+xexpand(KMP_API_NAME_GOMP_LOOP_END_CANCEL)(void) {}
+
+
+// All target functions are empty as of 2014-05-29
+void
+xexpand(KMP_API_NAME_GOMP_TARGET)(int device, void (*fn) (void *), const void *openmp_target,
+                                  size_t mapnum, void **hostaddrs, size_t *sizes, unsigned char *kinds)
+{
+    return;
 }
+
+void
+xexpand(KMP_API_NAME_GOMP_TARGET_DATA)(int device, const void *openmp_target, size_t mapnum,
+                                       void **hostaddrs, size_t *sizes, unsigned char *kinds)
+{
+    return;
+}
+
+void
+xexpand(KMP_API_NAME_GOMP_TARGET_END_DATA)(void)
+{
+    return;
+}
+
+void
+xexpand(KMP_API_NAME_GOMP_TARGET_UPDATE)(int device, const void *openmp_target, size_t mapnum,
+                                         void **hostaddrs, size_t *sizes, unsigned char *kinds)
+{
+    return;
+}
+
+void
+xexpand(KMP_API_NAME_GOMP_TEAMS)(unsigned int num_teams, unsigned int thread_limit)
+{
+    return;
+}
+
+/*
+    The following sections of code create aliases for the GOMP_* functions,
+    then create versioned symbols using the assembler directive .symver.
+    This is only pertinent for ELF .so library
+    xaliasify and xversionify are defined in kmp_ftn_os.h
+*/
 
 // GOMP_1.0 aliases
 xaliasify(KMP_API_NAME_GOMP_ATOMIC_END, 10);

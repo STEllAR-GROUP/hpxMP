@@ -44,6 +44,12 @@ endif()
 if(HPXMP_WITH_GCC)
     add_definitions(-DHPXMP_HAVE_GCC)
 endif()
+#decide whether debug or release build
+set(RELEASE_BUILD FALSE)
+string(TOLOWER "${CMAKE_BUILD_TYPE}" libhpxmp_build_type_lowercase)
+if("${libhpxmp_build_type_lowercase}" STREQUAL "release")
+    set(RELEASE_BUILD TRUE)
+endif()
 
 # Find and include HPX settings
 if(NOT HPX_WITH_HPXMP)
