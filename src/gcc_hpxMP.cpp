@@ -170,7 +170,7 @@ __kmp_GOMP_parallel_microtask_wrapper(int *gtid, int *npr,
                                       long end, long incr,
                                       long chunk_size) {
     // Intialize the loop worksharing construct.
-    __kmpc_dispatch_init_4(nullptr, *gtid, schedule, start, end, incr, chunk_size);
+    __kmpc_dispatch_init_8(nullptr, *gtid, schedule, start, end, incr, chunk_size);
     // Now invoke the microtask.
     task(data);
 }
@@ -236,11 +236,47 @@ xexpand(KMP_API_NAME_GOMP_PARALLEL_END)(void) {}
 // with ordered static loop, so they can be checked.
 //
 
+#define LOOP_START(func, schedule)                                             \
+    int func(                                                                  \
+        long lb, long ub, long str, long chunk_sz, long *p_lb, long *p_ub)     \
+    {                                                                          \
+        int status;                                                            \
+        long stride;                                                           \
+        int gtid = hpx_backend->get_thread_num();                              \
+        if ((str > 0) ? (lb < ub) : (lb > ub))                                 \
+        {                                                                      \
+            __kmpc_dispatch_init_8(nullptr, gtid, (schedule), lb,              \
+                (str > 0) ? (ub - 1) : (ub + 1), str, chunk_sz);               \
+            status = __kmpc_dispatch_next_8(nullptr, gtid, NULL,               \
+                (int64_t *) p_lb, (int64_t *) p_ub, (int64_t *) &stride);      \
+            if (status)                                                        \
+            {                                                                  \
+                *p_ub += (str > 0) ? 1 : -1;                                   \
+            }                                                                  \
+            else                                                               \
+            {                                                                  \
+                status = 0;                                                    \
+            }                                                                  \
+        }                                                                      \
+        return status;                                                         \
+    }
 //TODO:
-
-#define LOOP_START(func,schedule)
 #define LOOP_RUNTIME_START(func,schedule)
-#define LOOP_NEXT(func,fini_code)
+
+#define LOOP_NEXT(func, fini_code)                                             \
+    int func(long *p_lb, long *p_ub)                                           \
+    {                                                                          \
+        int status;                                                            \
+        long stride;                                                           \
+        int gtid = hpx_backend->get_thread_num();                              \
+        fini_code status = __kmpc_dispatch_next_8(nullptr, gtid, NULL,         \
+            (int64_t *) p_lb, (int64_t *) p_ub, (int64_t *) &stride);          \
+        if (status)                                                            \
+        {                                                                      \
+            *p_ub += (stride > 0) ? 1 : -1;                                    \
+        }                                                                      \
+        return status;                                                         \
+    }
 
 LOOP_START(xexpand(KMP_API_NAME_GOMP_LOOP_STATIC_START), kmp_sch_static)
 LOOP_NEXT(xexpand(KMP_API_NAME_GOMP_LOOP_STATIC_NEXT), {})
@@ -253,52 +289,53 @@ LOOP_NEXT(xexpand(KMP_API_NAME_GOMP_LOOP_RUNTIME_NEXT), {})
 
 LOOP_START(xexpand(KMP_API_NAME_GOMP_LOOP_ORDERED_STATIC_START), kmp_ord_static)
 LOOP_NEXT(xexpand(KMP_API_NAME_GOMP_LOOP_ORDERED_STATIC_NEXT), \
-    { KMP_DISPATCH_FINI_CHUNK(&loc, gtid); })
-//LOOP_START(xexpand(KMP_API_NAME_GOMP_LOOP_ORDERED_DYNAMIC_START), kmp_ord_dynamic_chunked)
-//LOOP_NEXT(xexpand(KMP_API_NAME_GOMP_LOOP_ORDERED_DYNAMIC_NEXT), \
-//    { KMP_DISPATCH_FINI_CHUNK(&loc, gtid); })
+    { __kmpc_dispatch_fini_8(nullptr, gtid); })
+LOOP_START(xexpand(KMP_API_NAME_GOMP_LOOP_ORDERED_DYNAMIC_START), kmp_ord_dynamic_chunked)
+LOOP_NEXT(xexpand(KMP_API_NAME_GOMP_LOOP_ORDERED_DYNAMIC_NEXT), \
+    { __kmpc_dispatch_fini_8(nullptr, gtid); })
 LOOP_START(xexpand(KMP_API_NAME_GOMP_LOOP_ORDERED_GUIDED_START), kmp_ord_guided_chunked)
 LOOP_NEXT(xexpand(KMP_API_NAME_GOMP_LOOP_ORDERED_GUIDED_NEXT), \
-    { KMP_DISPATCH_FINI_CHUNK(&loc, gtid); })
+    { __kmpc_dispatch_fini_8(nullptr, gtid); })
 LOOP_RUNTIME_START(xexpand(KMP_API_NAME_GOMP_LOOP_ORDERED_RUNTIME_START), kmp_ord_runtime)
 LOOP_NEXT(xexpand(KMP_API_NAME_GOMP_LOOP_ORDERED_RUNTIME_NEXT), \
-    { KMP_DISPATCH_FINI_CHUNK(&loc, gtid); })
+    { __kmpc_dispatch_fini_8(nullptr, gtid); })
 
-int xexpand(KMP_API_NAME_GOMP_LOOP_ORDERED_DYNAMIC_START)(
-    long lb, long ub, long str, long *p_lb, long *p_ub)
-{
-    int status;
-    long stride;
-    long chunk_sz = 0;
-    int gtid = hpx_backend->get_thread_num();
-    if ((str > 0) ? (lb < ub) : (lb > ub)) {
-        __kmpc_dispatch_init_8(nullptr, gtid, kmp_ord_dynamic_chunked, lb,
-            (str > 0) ? (ub - 1) : (ub + 1), str, chunk_sz);
-        status = __kmpc_dispatch_next_8(nullptr, gtid, NULL, (int64_t*)p_lb,
-                                        (int64_t*)p_ub, (int64_t*)&stride);
-        if(status){
-            *p_ub += (str > 0)? 1 : -1;
-        }else{
-            status = 0;
-        }
-    }
-    return status;
-}
+    //TODO: delete this once done, for debug perpose leave here for now
+//int xexpand(KMP_API_NAME_GOMP_LOOP_ORDERED_DYNAMIC_START)(
+//    long lb, long ub, long str, long *p_lb, long *p_ub)
+//{
+//    int status;
+//    long stride;
+//    long chunk_sz = 0;
+//    int gtid = hpx_backend->get_thread_num();
+//    if ((str > 0) ? (lb < ub) : (lb > ub)) {
+//        __kmpc_dispatch_init_8(nullptr, gtid, kmp_ord_dynamic_chunked, lb,
+//            (str > 0) ? (ub - 1) : (ub + 1), str, chunk_sz);
+//        status = __kmpc_dispatch_next_8(nullptr, gtid, NULL, (int64_t*)p_lb,
+//                                        (int64_t*)p_ub, (int64_t*)&stride);
+//        if(status){
+//            *p_ub += (str > 0)? 1 : -1;
+//        }else{
+//            status = 0;
+//        }
+//    }
+//    return status;
+//}
 
-int
-xexpand(KMP_API_NAME_GOMP_LOOP_ORDERED_DYNAMIC_NEXT)(long *p_lb, long *p_ub){
-    int status;
-    long stride;
-    int gtid = hpx_backend->get_thread_num();
-    //fini code
-    {__kmpc_dispatch_fini_8(nullptr, gtid);}
-    status = __kmpc_dispatch_next_8(nullptr, gtid, NULL, (int64_t*)p_lb,
-                                    (int64_t*)p_ub, (int64_t*)&stride);
-    if (status) {
-      *p_ub += (stride > 0) ? 1 : -1;
-    }
-    return status;
-}
+//int
+//xexpand(KMP_API_NAME_GOMP_LOOP_ORDERED_DYNAMIC_NEXT)(long *p_lb, long *p_ub){
+//    int status;
+//    long stride;
+//    int gtid = hpx_backend->get_thread_num();
+//    //fini code
+//    {__kmpc_dispatch_fini_8(nullptr, gtid);}
+//    status = __kmpc_dispatch_next_8(nullptr, gtid, NULL, (int64_t*)p_lb,
+//                                    (int64_t*)p_ub, (int64_t*)&stride);
+//    if (status) {
+//      *p_ub += (stride > 0) ? 1 : -1;
+//    }
+//    return status;
+//}
 
 //TODO:
 void
@@ -438,7 +475,7 @@ xexpand(KMP_API_NAME_GOMP_TASKYIELD)(void) {}
 
 
 
-// these are new GOMP_4.0 entry points
+//// these are new GOMP_4.0 entry points
 
 void
 xexpand(KMP_API_NAME_GOMP_PARALLEL)(void (*task)(void *), void *data, unsigned num_threads, unsigned int flags) {
@@ -459,50 +496,49 @@ xexpand(KMP_API_NAME_GOMP_PARALLEL)(void (*task)(void *), void *data, unsigned n
 void
 xexpand(KMP_API_NAME_GOMP_PARALLEL_SECTIONS)(void (*task) (void *), void *data,
                                              unsigned num_threads, unsigned count, unsigned flags) {}
-//TODO:
-#define PARALLEL_LOOP(func, schedule, ompt_pre, ompt_post)
+
+//from gomp parallel
+//__kmpc_push_num_threads
+#define PARALLEL_LOOP(func, schedule, ompt_pre, ompt_post)                     \
+    void func(void (*task)(void *), void *data, unsigned num_threads, long lb, \
+        long ub, long str, long chunk_sz, unsigned flags)                      \
+    {                                                                          \
+        start_backend();                                                       \
+        omp_task_data *my_data = hpx_backend->get_task_data();                 \
+        my_data->set_threads_requested(num_threads);                           \
+        __kmp_GOMP_fork_call(task,                                             \
+            (microtask_t) __kmp_GOMP_parallel_microtask_wrapper, 9, task,      \
+            data, num_threads, nullptr, (schedule), lb,                        \
+            (str > 0) ? (ub - 1) : (ub + 1), str, chunk_sz);                   \
+    }
 
 PARALLEL_LOOP(xexpand(KMP_API_NAME_GOMP_PARALLEL_LOOP_STATIC), kmp_sch_static,
               OMPT_LOOP_PRE, OMPT_LOOP_POST)
-//PARALLEL_LOOP(xexpand(KMP_API_NAME_GOMP_PARALLEL_LOOP_DYNAMIC), kmp_sch_dynamic_chunked,
-//              OMPT_LOOP_PRE, OMPT_LOOP_POST)
+PARALLEL_LOOP(xexpand(KMP_API_NAME_GOMP_PARALLEL_LOOP_DYNAMIC), kmp_sch_dynamic_chunked,
+              OMPT_LOOP_PRE, OMPT_LOOP_POST)
 PARALLEL_LOOP(xexpand(KMP_API_NAME_GOMP_PARALLEL_LOOP_GUIDED), kmp_sch_guided_chunked,
               OMPT_LOOP_PRE, OMPT_LOOP_POST)
 PARALLEL_LOOP(xexpand(KMP_API_NAME_GOMP_PARALLEL_LOOP_RUNTIME), kmp_sch_runtime,
               OMPT_LOOP_PRE, OMPT_LOOP_POST)
 
-void
-xexpand(KMP_API_NAME_GOMP_PARALLEL_LOOP_DYNAMIC)(void (*task)(void *),
-    void *data, unsigned num_threads, long lb, long ub, long str, long chunk_sz,
-    unsigned flags){
-    printf("KMP_API_NAME_GOMP_PARALLEL_LOOP_DYNAMIC\n");
-
-    //from gomp parallel
-    start_backend();
-    //__kmpc_push_num_threads
-    omp_task_data * my_data = hpx_backend->get_task_data();
-    my_data->set_threads_requested(num_threads);
-
-    __kmp_GOMP_fork_call(task,
-        (microtask_t) __kmp_GOMP_parallel_microtask_wrapper, 9, task, data,
-        num_threads, nullptr, kmp_sch_dynamic_chunked, lb,
-        (str > 0) ? (ub - 1) : (ub + 1), str, chunk_sz);
-}
-
-int
-xexpand(KMP_API_NAME_GOMP_LOOP_DYNAMIC_NEXT)(long *p_lb, long *p_ub){
-//    printf("KMP_API_NAME_GOMP_LOOP_DYNAMIC_NEXT\n");
-    int status;
-    long stride;
-    int gtid = hpx_backend->get_thread_num();
-    {} status = __kmpc_dispatch_next_4(nullptr, gtid, NULL, (int32_t *)p_lb,
-                                         (int32_t *)p_ub, (int32_t *)&stride);
-    if (status) {
-      *p_ub += (stride > 0) ? 1 : -1;
-    }
-
-    return status;
-}
+//TODO: delete this once done, for debug perpose leave here for now
+//void
+//xexpand(KMP_API_NAME_GOMP_PARALLEL_LOOP_DYNAMIC)(void (*task)(void *),
+//    void *data, unsigned num_threads, long lb, long ub, long str, long chunk_sz,
+//    unsigned flags){
+//    printf("KMP_API_NAME_GOMP_PARALLEL_LOOP_DYNAMIC\n");
+//
+//    //from gomp parallel
+//    start_backend();
+//    //__kmpc_push_num_threads
+//    omp_task_data * my_data = hpx_backend->get_task_data();
+//    my_data->set_threads_requested(num_threads);
+//
+//    __kmp_GOMP_fork_call(task,
+//        (microtask_t) __kmp_GOMP_parallel_microtask_wrapper, 9, task, data,
+//        num_threads, nullptr, kmp_sch_dynamic_chunked, lb,
+//        (str > 0) ? (ub - 1) : (ub + 1), str, chunk_sz);
+//}
 
 //TODO:
 void

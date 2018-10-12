@@ -21,7 +21,9 @@ void omp_static_init( int gtid, int schedtype, int *p_last_iter,
     int block_size, stride, my_lower, my_upper;
 
     if (schedtype == kmp_sch_static) {
-        *p_last_iter = ( gtid == trip_count - 1 );
+        //gcc gives a null ptr to p_last_iter
+        if(p_last_iter)
+            *p_last_iter = ( gtid == trip_count - 1 );
         stride = (trip_count / team_size + adjustment + 1) * incr;
         block_size = (trip_count / team_size + adjustment) * incr;
         my_lower = *p_lower + gtid * stride;
@@ -36,9 +38,11 @@ void omp_static_init( int gtid, int schedtype, int *p_last_iter,
         my_upper = my_lower + incr * chunk - 1;
         
         if(trip_count - trip_count%(-chunk*incr) == gtid*incr*chunk + trip_count - trip_count%(chunk*incr*team_size) ) {
-            *p_last_iter = 1;
+            if(p_last_iter)
+                *p_last_iter = 1;
         } else {
-            *p_last_iter = 0;
+            if(p_last_iter)
+                *p_last_iter = 0;
         }
 
         *p_stride = incr*chunk*team_size;
