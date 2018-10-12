@@ -61,4 +61,11 @@ xexpand(KMP_API_NAME_GOMP_LOOP_DYNAMIC_NEXT)(long *p_lb, long *p_ub);
 
 extern "C" void
 xexpand(KMP_API_NAME_GOMP_LOOP_END_NOWAIT)(void);
+
+extern "C" int
+xexpand(KMP_API_NAME_GOMP_LOOP_ORDERED_DYNAMIC_START)(
+        long lb, long ub, long str, long *p_lb, long *p_ub);
+
+extern "C" int
+xexpand(KMP_API_NAME_GOMP_LOOP_ORDERED_DYNAMIC_NEXT)(long *p_lb, long *p_ub);
 #endif //HPXMP_GCC_HPXMP_H

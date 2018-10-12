@@ -254,9 +254,9 @@ LOOP_NEXT(xexpand(KMP_API_NAME_GOMP_LOOP_RUNTIME_NEXT), {})
 LOOP_START(xexpand(KMP_API_NAME_GOMP_LOOP_ORDERED_STATIC_START), kmp_ord_static)
 LOOP_NEXT(xexpand(KMP_API_NAME_GOMP_LOOP_ORDERED_STATIC_NEXT), \
     { KMP_DISPATCH_FINI_CHUNK(&loc, gtid); })
-LOOP_START(xexpand(KMP_API_NAME_GOMP_LOOP_ORDERED_DYNAMIC_START), kmp_ord_dynamic_chunked)
-LOOP_NEXT(xexpand(KMP_API_NAME_GOMP_LOOP_ORDERED_DYNAMIC_NEXT), \
-    { KMP_DISPATCH_FINI_CHUNK(&loc, gtid); })
+//LOOP_START(xexpand(KMP_API_NAME_GOMP_LOOP_ORDERED_DYNAMIC_START), kmp_ord_dynamic_chunked)
+//LOOP_NEXT(xexpand(KMP_API_NAME_GOMP_LOOP_ORDERED_DYNAMIC_NEXT), \
+//    { KMP_DISPATCH_FINI_CHUNK(&loc, gtid); })
 LOOP_START(xexpand(KMP_API_NAME_GOMP_LOOP_ORDERED_GUIDED_START), kmp_ord_guided_chunked)
 LOOP_NEXT(xexpand(KMP_API_NAME_GOMP_LOOP_ORDERED_GUIDED_NEXT), \
     { KMP_DISPATCH_FINI_CHUNK(&loc, gtid); })
@@ -264,7 +264,43 @@ LOOP_RUNTIME_START(xexpand(KMP_API_NAME_GOMP_LOOP_ORDERED_RUNTIME_START), kmp_or
 LOOP_NEXT(xexpand(KMP_API_NAME_GOMP_LOOP_ORDERED_RUNTIME_NEXT), \
     { KMP_DISPATCH_FINI_CHUNK(&loc, gtid); })
 
+int xexpand(KMP_API_NAME_GOMP_LOOP_ORDERED_DYNAMIC_START)(
+    long lb, long ub, long str, long *p_lb, long *p_ub)
+{
+    int status;
+    long stride;
+    long chunk_sz = 0;
+    int gtid = hpx_backend->get_thread_num();
+    if ((str > 0) ? (lb < ub) : (lb > ub)) {
+        __kmpc_dispatch_init_8(nullptr, gtid, kmp_ord_dynamic_chunked, lb,
+            (str > 0) ? (ub - 1) : (ub + 1), str, chunk_sz);
+        status = __kmpc_dispatch_next_8(nullptr, gtid, NULL, (int64_t*)p_lb,
+                                        (int64_t*)p_ub, (int64_t*)&stride);
+        if(status){
+            *p_ub += (str > 0)? 1 : -1;
+        }else{
+            status = 0;
+        }
+    }
+    return status;
+}
 
+int
+xexpand(KMP_API_NAME_GOMP_LOOP_ORDERED_DYNAMIC_NEXT)(long *p_lb, long *p_ub){
+    int status;
+    long stride;
+    int gtid = hpx_backend->get_thread_num();
+    //fini code
+    {__kmpc_dispatch_fini_8(nullptr, gtid);}
+    status = __kmpc_dispatch_next_8(nullptr, gtid, NULL, (int64_t*)p_lb,
+                                    (int64_t*)p_ub, (int64_t*)&stride);
+    if (status) {
+      *p_ub += (stride > 0) ? 1 : -1;
+    }
+    return status;
+}
+
+//TODO:
 void
 xexpand(KMP_API_NAME_GOMP_LOOP_END)(void) {}
 

@@ -12,6 +12,7 @@ set(tests
         private_shared_gcc
         omp-copyprivate
         omp-for-dynamic_gcc
+        for-dynamic-order-gcc
         )
 
 enable_testing()
