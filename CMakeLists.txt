@@ -40,10 +40,6 @@ if(HPXMP_WITH_OMPT)
             src/ompt-internal.h)
 endif()
 
-#temperory when build with gcc
-if(HPXMP_WITH_GCC)
-    add_definitions(-DHPXMP_HAVE_GCC)
-endif()
 #decide whether debug or release build
 set(RELEASE_BUILD FALSE)
 string(TOLOWER "${CMAKE_BUILD_TYPE}" libhpxmp_build_type_lowercase)
@@ -95,7 +91,6 @@ endif()
 
 add_subdirectory(examples/ompt)
 add_subdirectory(examples/gcc_example)
-#add_subdirectory(tests/omp/tests/src)
 add_subdirectory(tests/ompt)
 add_subdirectory(tests/openmp)
 enable_testing()
