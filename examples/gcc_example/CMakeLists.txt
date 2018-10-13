@@ -5,14 +5,6 @@
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fopenmp")
 set(tests
-        hello_world_gcc
-        task_gcc
-        task_with_global
-        task_wait_single_gcc
-        private_shared_gcc
-        omp-copyprivate
-        omp-for-dynamic_gcc
-        for-dynamic-order-gcc
         )
 
 enable_testing()
