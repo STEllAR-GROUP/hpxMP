@@ -1,3 +1,8 @@
+// Copyright (c) 2018 Tianyi Zhang
+//
+// Distributed under the Boost Software License, Version 1.0. (See accompanying
+// file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
+
 #include "ompt-internal.h"
 #include "kmp_atomic.h"
 #include "intel_hpxMP.h"
@@ -260,8 +265,31 @@ xexpand(KMP_API_NAME_GOMP_PARALLEL_END)(void) {}
         }                                                                      \
         return status;                                                         \
     }
-//TODO:
-#define LOOP_RUNTIME_START(func,schedule)
+
+#define LOOP_RUNTIME_START(func, schedule)                                     \
+    int func(long lb, long ub, long str, long *p_lb, long *p_ub)               \
+    {                                                                          \
+        int status;                                                            \
+        long stride;                                                           \
+        long chunk_sz = 0;                                                     \
+        int gtid = hpx_backend->get_thread_num();                              \
+        if ((str > 0) ? (lb < ub) : (lb > ub))                                 \
+        {                                                                      \
+            __kmpc_dispatch_init_8(nullptr, gtid, (schedule), lb,              \
+                (str > 0) ? (ub - 1) : (ub + 1), str, chunk_sz);               \
+            status = __kmpc_dispatch_next_8(nullptr, gtid, NULL,               \
+                (int64_t *) p_lb, (int64_t *) p_ub, (int64_t *) &stride);      \
+            if (status)                                                        \
+            {                                                                  \
+                *p_ub += (str > 0) ? 1 : -1;                                   \
+            }                                                                  \
+            else                                                               \
+            {                                                                  \
+                status = 0;                                                    \
+            }                                                                  \
+        }                                                                      \
+        return status;                                                         \
+    }
 
 #define LOOP_NEXT(func, fini_code)                                             \
     int func(long *p_lb, long *p_ub)                                           \
@@ -348,7 +376,7 @@ xexpand(KMP_API_NAME_GOMP_LOOP_END_NOWAIT)(void) {}
 //
 // Unsigned long long loop worksharing constructs
 //
-// These are new with gcc 4.4
+//// These are new with gcc 4.4
 //
 
 #define LOOP_START_ULL(func,schedule)
@@ -454,10 +482,10 @@ xexpand(KMP_API_NAME_GOMP_TASKWAIT)(void)
 
 //TODO:
 unsigned
-xexpand(KMP_API_NAME_GOMP_SECTIONS_START)(unsigned count) {}
+xexpand(KMP_API_NAME_GOMP_SECTIONS_START)(unsigned count) { return 0;}
 
 unsigned
-xexpand(KMP_API_NAME_GOMP_SECTIONS_NEXT)(void) {}
+xexpand(KMP_API_NAME_GOMP_SECTIONS_NEXT)(void) { return 0; }
 
 void
 xexpand(KMP_API_NAME_GOMP_PARALLEL_SECTIONS_START)(void (*task) (void *), void *data,
@@ -550,22 +578,22 @@ xexpand(KMP_API_NAME_GOMP_TASKGROUP_END)(void) {}
 #if RELEASE_BUILD
 static
 #endif
-kmp_int32 __kmp_gomp_to_omp_cancellation_kind(int gomp_kind) {}
+kmp_int32 __kmp_gomp_to_omp_cancellation_kind(int gomp_kind) { return 0;}
 
 bool
-xexpand(KMP_API_NAME_GOMP_CANCELLATION_POINT)(int which) {}
+xexpand(KMP_API_NAME_GOMP_CANCELLATION_POINT)(int which) { return true; }
 
 bool
-xexpand(KMP_API_NAME_GOMP_BARRIER_CANCEL)(void) {}
+xexpand(KMP_API_NAME_GOMP_BARRIER_CANCEL)(void) {return true; }
 
 bool
-xexpand(KMP_API_NAME_GOMP_CANCEL)(int which, bool do_cancel) {}
+xexpand(KMP_API_NAME_GOMP_CANCEL)(int which, bool do_cancel) {return true;}
 
 bool
-xexpand(KMP_API_NAME_GOMP_SECTIONS_END_CANCEL)(void) {}
+xexpand(KMP_API_NAME_GOMP_SECTIONS_END_CANCEL)(void) {return true;}
 
 bool
-xexpand(KMP_API_NAME_GOMP_LOOP_END_CANCEL)(void) {}
+xexpand(KMP_API_NAME_GOMP_LOOP_END_CANCEL)(void) {return true;}
 
 
 // All target functions are empty as of 2014-05-29
