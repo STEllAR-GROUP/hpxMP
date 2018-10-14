@@ -428,36 +428,48 @@ PARALLEL_LOOP_START(xexpand(KMP_API_NAME_GOMP_PARALLEL_LOOP_RUNTIME_START),
 
 void
 xexpand(KMP_API_NAME_GOMP_TASK)(void (*func)(void *), void *data, void (*copy_func)(void *, void *),
-                                long arg_size, long arg_align, bool if_cond, unsigned gomp_flags){
+                                long arg_size, long arg_align, bool if_cond, unsigned gomp_flags,void **depend) {
 //    printf("GOMP_TASK\n");
     start_backend();
     int gtid = hpx_backend->get_thread_num();
 
     kmp_task_t *task = __kmpc_omp_task_alloc(nullptr, gtid, 0,
                                              sizeof(kmp_task_t), arg_size ? arg_size + arg_align - 1 : 0,
-                                             (kmp_routine_entry_t)func);
+                                             (kmp_routine_entry_t) func);
 
     if (arg_size > 0) {
         if (arg_align > 0) {
-            task->shareds = (void *)((((size_t)task->shareds)
-                                      + arg_align - 1) / arg_align * arg_align);
+            task->shareds = (void *) ((((size_t) task->shareds)
+                                       + arg_align - 1) / arg_align * arg_align);
         }
         if (copy_func) {
             (*copy_func)(task->shareds, data);
-        }
-        else {
+        } else {
             memcpy(task->shareds, data, arg_size);
         }
     }
     if (if_cond) {
-        __kmpc_omp_task(nullptr, gtid, task);
+        if (gomp_flags & 8) {
+            const size_t ndeps = (kmp_intptr_t) depend[0];
+            const size_t nout = (kmp_intptr_t) depend[1];
+            kmp_depend_info_t dep_list[ndeps];
+
+            for (size_t i = 0U; i < ndeps; i++) {
+                dep_list[i].base_addr = (kmp_intptr_t) depend[2U + i];
+                dep_list[i].len = 0U;
+                dep_list[i].flags.in = 1;
+                dep_list[i].flags.out = (i < nout);
+            }
+            __kmpc_omp_task_with_deps(nullptr, gtid, task, ndeps, dep_list, 0, NULL);
+        } else {
+            __kmpc_omp_task(nullptr, gtid, task);
+        }
+    }else {
+            __kmpc_omp_task_begin_if0(nullptr, gtid, task);
+            func(data);
+            __kmpc_omp_task_complete_if0(nullptr, gtid, task);
+        }
     }
-    else {
-        __kmpc_omp_task_begin_if0(nullptr, gtid, task);
-        func(data);
-        __kmpc_omp_task_complete_if0(nullptr, gtid, task);
-    }
-}
 
 
 void
