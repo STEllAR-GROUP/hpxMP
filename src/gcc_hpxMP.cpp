@@ -436,7 +436,7 @@ xexpand(KMP_API_NAME_GOMP_TASK)(void (*func)(void *), void *data, void (*copy_fu
     kmp_task_t *task = __kmpc_omp_task_alloc(nullptr, gtid, 0,
                                              sizeof(kmp_task_t), arg_size ? arg_size + arg_align - 1 : 0,
                                              (kmp_routine_entry_t) func);
-
+    task->gcc = true;
     if (arg_size > 0) {
         if (arg_align > 0) {
             task->shareds = (void *) ((((size_t) task->shareds)

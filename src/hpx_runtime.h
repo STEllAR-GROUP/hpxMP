@@ -68,6 +68,7 @@ typedef struct kmp_task {
     void *              shareds;
     kmp_routine_entry_t routine;
     int                 part_id;
+    bool                gcc;
 #if OMP_40_ENABLED
     kmp_routine_entry_t destructors;
 #endif

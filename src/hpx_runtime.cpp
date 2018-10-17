@@ -296,11 +296,11 @@ void task_setup( int gtid, kmp_task_t *task, omp_icv icv,
     }
 #endif
 
-#ifdef __clang__
+if(! task->gcc)
     task_func(gtid, task);
-#else
+else
     ((void (*)(void *))(*(task->routine)))(task->shareds);
-#endif
+
     *(parent_task_counter) -= 1;
 #ifndef OMP_COMPLIANT
     team->num_tasks--;
