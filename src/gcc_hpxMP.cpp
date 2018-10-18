@@ -11,6 +11,7 @@
 #include <boost/shared_ptr.hpp>
 #include <iostream>
 #include <assert.h>
+#include <hpx/util/assert.hpp>
 
 extern boost::shared_ptr<hpx_runtime> hpx_backend;
 
@@ -248,6 +249,7 @@ xexpand(KMP_API_NAME_GOMP_PARALLEL_START)(void (*task)(void *), void *data, unsi
 #if defined DEBUG && defined HPXMP_HAVE_TRACE
     std::cout << "KMP_API_NAME_GOMP_PARALLEL_START" << std::endl;
 #endif
+    HPX_ASSERT(false);
 }
 
 //seems not needed anymore
@@ -256,6 +258,7 @@ xexpand(KMP_API_NAME_GOMP_PARALLEL_END)(void) {
 #if defined DEBUG && defined HPXMP_HAVE_TRACE
     std::cout << "KMP_API_NAME_GOMP_PARALLEL_END" << std::endl;
 #endif
+    HPX_ASSERT(false);
 }
 
 

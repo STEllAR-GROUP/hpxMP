@@ -48,6 +48,7 @@ macro(do_test name)
             CXX_STANDARD_REQUIRED ON
             CXX_EXTENSIONS OFF
             )
+        #maybe make the omp_num_threads configurable later
     set_tests_properties(${name} PROPERTIES
             ENVIRONMENT "LD_PRELOAD=${PROJECT_BINARY_DIR}/libhpxmp.so;OMP_NUM_THREADS=2"
             TIMEOUT 50
