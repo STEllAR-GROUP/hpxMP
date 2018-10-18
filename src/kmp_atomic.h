@@ -170,7 +170,8 @@ inline kmp_real64 KMP_XCHG_REAL64( volatile kmp_real64 *p, kmp_real64 v) {
     return *(kmp_real64*)&tmp;
 }
 
-struct ident_t;
+//changed from struct ident_t
+typedef struct ident_t ident_t;
 
 // create shortcuts for c99 complex types
 typedef float _Complex       kmp_cmplx32;

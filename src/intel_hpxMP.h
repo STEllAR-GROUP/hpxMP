@@ -1,7 +1,7 @@
 #include "hpx_runtime.h"
 #include <cstdarg>
-
-
+#pragma once
+extern "C" void start_backend();
 typedef int kmp_int32;
 typedef long long kmp_int64;
 
@@ -86,14 +86,14 @@ enum sched_type {
 };
 
 
-
-typedef struct ident {
+//changed to forward decleartion because of in gcc_hpxMP, kmp_atomic.h and this header is included.
+struct ident_t {
     kmp_int32 reserved_1;   /**<  m ght be used in Fortran; see above  */
     kmp_int32 flags;        /**<  also f.flags; KMP_IDENT_xxx flags; KMP_IDENT_KMPC identifies this union member  */
     kmp_int32 reserved_2;   /**<  not really used in Fortran any more; see above */
     kmp_int32 reserved_3;   /**< source[4] in Fortran, do not use for C++  */
     char const *psource;    /**< String describing the source location.*/
-} ident_t;
+};
 
 typedef struct kmp_tasking_flags {          /* Total struct must be exactly 32 bits */
     /* Compiler flags */                    /* Total compiler flags must be 16 bits */

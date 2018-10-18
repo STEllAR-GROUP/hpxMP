@@ -74,7 +74,6 @@ __kmpc_fork_call(ident_t *loc, kmp_int32 argc, kmpc_micro microtask, ...) {
     }
     va_end( ap );
     void ** args = argv.data();
-
     hpx_backend->fork(__kmp_invoke_microtask, microtask, argc, args);
 }
 
@@ -98,13 +97,13 @@ __kmpc_omp_task_alloc( ident_t *loc_ref, kmp_int32 gtid, kmp_int32 flags,
 
     //This gets deleted at the end of task_setup
     task->routine = task_entry;
+    task->gcc = false;
     if( sizeof_shareds == 0 ) {
         task->shareds = NULL;
     } else {
         task->shareds = &((char*) task)[task_size];
     }
     task->part_id = 0;
-
     return task;
 }
 

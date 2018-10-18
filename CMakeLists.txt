@@ -13,13 +13,15 @@ set(hpxmp_sources
         src/intel_hpxMP.cpp
         src/hpx_runtime.cpp
         src/kmp_atomic.cpp
-        src/loop_schedule.cpp)
+        src/loop_schedule.cpp
+        src/gcc_hpxMP.cpp)
 
 set(hpxmp_headers
         src/intel_hpxMP.h
         src/hpx_runtime.h
         src/kmp_atomic.h
-        src/loop_schedule.h)
+        src/loop_schedule.h
+        src/gcc_hpxMP.h)
 
 set(HPXMP_WITH_TRACE OFF CACHE BOOL "display traces in debug mode")
 if(HPXMP_WITH_TRACE)
@@ -36,6 +38,13 @@ if(HPXMP_WITH_OMPT)
             src/ompt.h
             src/ompt-event-specific.h
             src/ompt-internal.h)
+endif()
+
+#decide whether debug or release build
+set(RELEASE_BUILD FALSE)
+string(TOLOWER "${CMAKE_BUILD_TYPE}" libhpxmp_build_type_lowercase)
+if("${libhpxmp_build_type_lowercase}" STREQUAL "release")
+    set(RELEASE_BUILD TRUE)
 endif()
 
 # Find and include HPX settings
@@ -81,7 +90,7 @@ else()
 endif()
 
 add_subdirectory(examples/ompt)
-#add_subdirectory(tests/omp/tests/src)
+add_subdirectory(examples/gcc_example)
 add_subdirectory(tests/ompt)
 add_subdirectory(tests/openmp)
 enable_testing()

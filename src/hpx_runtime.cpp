@@ -296,7 +296,10 @@ void task_setup( int gtid, kmp_task_t *task, omp_icv icv,
     }
 #endif
 
+if(! task->gcc)
     task_func(gtid, task);
+else
+    ((void (*)(void *))(*(task->routine)))(task->shareds);
 
     *(parent_task_counter) -= 1;
 #ifndef OMP_COMPLIANT
@@ -576,9 +579,11 @@ void thread_setup( invoke_func kmp_invoke, microtask_t thread_func,
             }
         }
 #endif
-
+//#ifdef HPXMP_HAVE_GCC
+//    ((void(*)(void*)) argv[0])(argv[1]);
+//#else
     kmp_invoke(thread_func, tid, tid, argc, argv);
-
+//#endif
 #if HPXMP_HAVE_OMPT
     if (ompt_enabled.enabled) {
         if (ompt_enabled.ompt_callback_implicit_task) {

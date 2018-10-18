@@ -9,8 +9,10 @@ set(tests
         app_old_fib
         app_omp_fib
         app_vla
+        atomic
         barrier
         critical
+        critical_2
         firstprivate
         for_decrement
         for_dynamic
@@ -26,12 +28,14 @@ set(tests
         par_single
         sections
         #single_copyprivate #failure sometime
+        #single_copyprivate_2
         #single_copyprivate_1var    #failure sometime
         single_nowait
         task_depend
         task_fp_
         task_tree
         taskwait
+        taskwait_2
         #threadprivate  #failure sometime
         )
 
@@ -44,6 +48,7 @@ macro(do_test name)
             CXX_STANDARD_REQUIRED ON
             CXX_EXTENSIONS OFF
             )
+        #maybe make the omp_num_threads configurable later
     set_tests_properties(${name} PROPERTIES
             ENVIRONMENT "LD_PRELOAD=${PROJECT_BINARY_DIR}/libhpxmp.so;OMP_NUM_THREADS=2"
             TIMEOUT 50
