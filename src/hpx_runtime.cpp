@@ -29,7 +29,9 @@ extern boost::shared_ptr<hpx_runtime> hpx_backend;
 
 void wait_for_startup(std::mutex& startup_mtx, std::condition_variable& cond, bool& running)
 {
+#if defined DEBUG
     cout << "HPX OpenMP runtime has started" << endl;
+#endif
     {   // Let the main thread know that we're done.
         //std::scoped_lock lk(startup_mtx);
         std::lock_guard<std::mutex> lk(startup_mtx);
@@ -40,10 +42,14 @@ void wait_for_startup(std::mutex& startup_mtx, std::condition_variable& cond, bo
 
 void fini_runtime()
 {
+#if defined DEBUG
     cout << "Stopping HPX OpenMP runtime" << endl;
+#endif
     //this should only be done if this runtime started hpx
     hpx::get_runtime().stop();
+#if defined DEBUG
     cout << "Stopped" << endl;
+#endif
 }
 
 void start_hpx(int initial_num_threads)
