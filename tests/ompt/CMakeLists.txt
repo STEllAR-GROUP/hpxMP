@@ -6,17 +6,17 @@
 if(HPXMP_WITH_OMPT)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fopenmp")
     set(tests
-            par_for
-            parallel
-            parallel_nested
-            task
-            task_dep
-            task_fp
-            task_implicit_simple
-            task_simple
-            wait_barrier
-            task_wait
-            task_group
+            ompt_par_for
+            ompt_parallel
+            ompt_parallel_nested
+            ompt_task
+            ompt_task_dep
+            ompt_task_fp
+            ompt_task_implicit_simple
+            ompt_task_simple
+            ompt_wait_barrier
+            ompt_task_wait
+            ompt_task_group
             )
 
     enable_testing()

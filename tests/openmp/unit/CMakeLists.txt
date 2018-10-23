@@ -23,7 +23,7 @@ set(tests
         for_static
         master
         max_threads
-        par_for_
+        par_for
         par_nested
         par_single
         sections
@@ -32,7 +32,7 @@ set(tests
         #single_copyprivate_1var    #failure sometime
         single_nowait
         task_depend
-        task_fp_
+        task_fp
         task_tree
         taskwait
         taskwait_2
@@ -60,5 +60,3 @@ foreach(test ${tests})
     add_executable(${test} ${sources})
     do_test(${test})
 endforeach()
-
-add_subdirectory(issues)

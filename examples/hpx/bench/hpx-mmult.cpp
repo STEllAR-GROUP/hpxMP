@@ -7,7 +7,7 @@
 
 #include <sys/time.h>
 
-#include <matrix_block.h>
+#include "matrix_block.h"
 
 using hpx::lcos::future;
 using hpx::util::unwrapped;

@@ -3,6 +3,8 @@
 //  Distributed under the Boost Software License, Version 1.0. (See accompanying
 //  file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
+// Demonstrating #32: Returns a unique thread identification number within the current team. In a sequential parts of the program, omp_get_thread_num always returns 0.
+
 #include <stdio.h>
 #include <omp.h>
 #define PASS 10

@@ -3,7 +3,7 @@
 # Distributed under the Boost Software License, Version 1.0. (See accompanying
 # file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fopenmp")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fopenmp")
 set(tests
         )
 
@@ -17,7 +17,6 @@ macro(do_test name)
             CXX_EXTENSIONS OFF
             )
     set_tests_properties(${name} PROPERTIES
-            #                PASS_REGULAR_EXPRESSION "pass"
             ENVIRONMENT "LD_PRELOAD=${PROJECT_BINARY_DIR}/libhpxmp.so;OMP_NUM_THREADS=2"
             TIMEOUT 10
             )

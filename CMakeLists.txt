@@ -89,8 +89,6 @@ else()
 
 endif()
 
-add_subdirectory(examples/ompt)
-add_subdirectory(examples/gcc_example)
-add_subdirectory(tests/ompt)
-add_subdirectory(tests/openmp)
+add_subdirectory(examples)
+add_subdirectory(tests)
 enable_testing()
