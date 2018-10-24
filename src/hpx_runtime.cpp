@@ -12,6 +12,7 @@
 // We need to explicitly include the implementations for hpx::start if hpxMP is
 // being compiled as part of HPX itself
 #include <hpx/hpx_start_impl.hpp>
+#include <hpx/runtime/threads/run_as_hpx_thread.hpp>
 
 using std::cout;
 using std::endl;
@@ -363,8 +364,14 @@ void hpx_runtime::create_task( kmp_routine_entry_t task_func, int gtid, kmp_task
         //TODO: add taskgroups in non compliant version
         *(current_task->num_child_tasks) += 1;
         current_task->team->num_tasks++;
-        hpx::apply(task_setup, gtid, thunk, current_task->icv,
-                    current_task->num_child_tasks, current_task->team );
+        //this fixes hpx::apply changes in hpx backend
+        hpx::applier::register_thread_nullary(
+            std::bind(&task_setup, gtid, thunk, current_task->icv,
+                current_task->num_child_tasks, current_task->team),
+            "omp_explicit_task", hpx::threads::pending, true,
+            hpx::threads::thread_priority_normal);
+//        hpx::apply(task_setup, gtid, thunk, current_task->icv,
+//                    current_task->num_child_tasks, current_task->team );
 #endif
     }
 //    else {
@@ -702,19 +709,6 @@ void fork_worker( invoke_func kmp_invoke, microtask_t thread_func,
 #endif
 }
 
-void fork_and_sync( invoke_func kmp_invoke, microtask_t thread_func,
-                    int argc, void **argv,
-                    omp_task_data *parent, std::mutex& fork_mtx,
-                    std::condition_variable& cond, bool& running )
-{
-    fork_worker(kmp_invoke, thread_func, argc, argv, parent);
-    {
-        std::lock_guard<std::mutex> lk(fork_mtx);
-        running = true;
-        cond.notify_all();
-    }
-}
-
 //TODO: This can make main an HPX high priority thread
 //TODO: according to the spec, the current thread should be thread 0 of the new team, and execute the new work.
 void hpx_runtime::fork(invoke_func kmp_invoke, microtask_t thread_func, int argc, void** argv)
@@ -724,19 +718,9 @@ void hpx_runtime::fork(invoke_func kmp_invoke, microtask_t thread_func, int argc
     if( hpx::threads::get_self_ptr() ) {
         fork_worker(kmp_invoke, thread_func, argc, argv, current_task);
     } else {
-        std::mutex fork_mtx;
-        std::condition_variable cond;
-        bool running = false;
-        hpx::applier::register_thread_nullary(
-                std::bind(&fork_and_sync,
-                    kmp_invoke, thread_func, argc, argv,
-                    current_task, boost::ref(fork_mtx), boost::ref(cond), boost::ref(running))
-                , "ompc_fork_worker");
-        {
-            std::unique_lock<std::mutex> lk(fork_mtx);
-            while (!running)
-                cond.wait(lk);
-        }
+        //this handles the sync for hox threads.
+        hpx::threads::run_as_hpx_thread(&fork_worker,kmp_invoke, thread_func, argc, argv,
+                                        current_task);
     }
     current_task->set_threads_requested(current_task->icv.nthreads );
 }
