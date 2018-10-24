@@ -28,14 +28,14 @@ set(tests
         par_single
         sections
         #single_copyprivate #failure sometime
-        #single_copyprivate_2
+        #single_copyprivate_2   #failure sometime
         #single_copyprivate_1var    #failure sometime
         single_nowait
         task_depend
         task_fp
         task_tree
         taskwait
-        taskwait_2
+        #taskwait_2     #failure sometime
         #threadprivate  #failure sometime
         )
 
