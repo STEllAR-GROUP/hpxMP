@@ -6,6 +6,9 @@
 hpxMP is a portabl, scalable and flexible application programming interface using OpenMP specification 
 that supports multi-platform shared memory multiprocessing programming in C/ C++.
 
+A recorded video introduction of hpxMP can be found
+ [here](https://www.youtube.com/watch?v=ajDGWPDrcxU&index=12&list=PL7vEgTL3FalbVFwzkXLHpBRKlcJNULW1g).
+
 The [CircleCI](https://circleci.com/gh/STEllAR-GROUP/hpxMP) contiguous
 integration service tracks the current build status for the master branch:
 [![CircleCI](https://circleci.com/gh/STEllAR-GROUP/hpxMP.svg?style=svg)](https://circleci.com/gh/STEllAR-GROUP/hpxMP).
@@ -25,11 +28,16 @@ need to be replaced.
 
 # Installation
 
-Please refer to [Install Instruction](doc/install.md)
+Please refer to [Install Instruction](doc/install.md) for detailed instruction on how to install hpxMP.
 
 # Usecases
 
-Please refer to [Use Examples](doc/usecases.md)
+Please refer to [Use Examples](doc/usecases.md) for simple use examples.
+
+# DONEs and TODOs
+
+Please refer to [dones and todos](doc/done-todo.md) for information about
+what has been implemented in hpxMP and what needs to be done.
 
 # Feature
 
@@ -39,7 +47,4 @@ Please refer to doc/feature
 
 Please refer to doc/specification
 
-# TODO
-
-Please refer to doc/todo.md
 
