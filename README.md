@@ -12,9 +12,8 @@ integration service tracks the current build status for the master branch:
 
 # Code summary
 
-The intel openMP runtime calls are implemented in intel_hpxMP.cpp.
+The intel and gcc openMP runtime calls are implemented in intel_hpxMP.cpp/ gcc_hpxMP.cpp.
 The OMPT support is implemented in ompt_hpx_general.cpp
-The gcc support is implemented in gcc_hpxMP.cpp
 The bulk of the work is donein hpx_runtime.cpp.
 All of the structs/classes of interest are defined in hpx_runtime.h.
 
@@ -26,11 +25,11 @@ need to be replaced.
 
 # Installation
 
-Please refer to doc/install.md
+Please refer to [Install Instruction](doc/install.md)
 
 # Usecases
 
-Please refer to doc/usecases
+Please refer to [Use Examples](doc/usecases.md)
 
 # Feature
 
