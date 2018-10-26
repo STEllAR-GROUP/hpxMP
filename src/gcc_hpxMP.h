@@ -77,6 +77,45 @@ DECLEAR_LOOP_NEXT(xexpand(KMP_API_NAME_GOMP_LOOP_ORDERED_DYNAMIC_NEXT))
 DECLEAR_LOOP_NEXT(xexpand(KMP_API_NAME_GOMP_LOOP_ORDERED_GUIDED_NEXT))
 DECLEAR_LOOP_NEXT(xexpand(KMP_API_NAME_GOMP_LOOP_ORDERED_RUNTIME_NEXT))
 
+//ULL LOOP CONSTRUCT ARE NOT TESTED
+#define DECLEAR_LOOP_START_ULL(func)                                           \
+    extern "C" int func(int up, unsigned long long lb, unsigned long long ub,  \
+        unsigned long long str, unsigned long long chunk_sz,                   \
+        unsigned long long *p_lb, unsigned long long *p_ub);
+DECLEAR_LOOP_START_ULL(xexpand(KMP_API_NAME_GOMP_LOOP_ULL_STATIC_START))
+DECLEAR_LOOP_START_ULL(xexpand(KMP_API_NAME_GOMP_LOOP_ULL_DYNAMIC_START))
+DECLEAR_LOOP_START_ULL(xexpand(KMP_API_NAME_GOMP_LOOP_ULL_GUIDED_START))
+DECLEAR_LOOP_START_ULL(xexpand(KMP_API_NAME_GOMP_LOOP_ULL_ORDERED_STATIC_START))
+DECLEAR_LOOP_START_ULL(xexpand(KMP_API_NAME_GOMP_LOOP_ULL_ORDERED_DYNAMIC_START))
+DECLEAR_LOOP_START_ULL(xexpand(KMP_API_NAME_GOMP_LOOP_ULL_ORDERED_GUIDED_START))
+
+#define DECLEAR_LOOP_RUNTIME_START_ULL(func)                                   \
+    extern "C" int func(int up, unsigned long long lb, unsigned long long ub,  \
+        unsigned long long str, unsigned long long *p_lb,                      \
+        unsigned long long *p_ub);
+DECLEAR_LOOP_RUNTIME_START_ULL(xexpand(KMP_API_NAME_GOMP_LOOP_ULL_RUNTIME_START))
+
+#define DECLEAR_LOOP_NEXT_ULL(func)                                            \
+    extern "C" int func(unsigned long long *p_lb, unsigned long long *p_ub);
+DECLEAR_LOOP_NEXT_ULL(xexpand(KMP_API_NAME_GOMP_LOOP_ULL_STATIC_NEXT))
+DECLEAR_LOOP_NEXT_ULL(xexpand(KMP_API_NAME_GOMP_LOOP_ULL_DYNAMIC_NEXT))
+DECLEAR_LOOP_NEXT_ULL(xexpand(KMP_API_NAME_GOMP_LOOP_ULL_GUIDED_NEXT))
+DECLEAR_LOOP_NEXT_ULL(xexpand(KMP_API_NAME_GOMP_LOOP_ULL_RUNTIME_NEXT))
+DECLEAR_LOOP_NEXT_ULL(xexpand(KMP_API_NAME_GOMP_LOOP_ULL_ORDERED_STATIC_NEXT))
+DECLEAR_LOOP_NEXT_ULL(xexpand(KMP_API_NAME_GOMP_LOOP_ULL_ORDERED_DYNAMIC_NEXT))
+DECLEAR_LOOP_NEXT_ULL(xexpand(KMP_API_NAME_GOMP_LOOP_ULL_ORDERED_GUIDED_NEXT))
+DECLEAR_LOOP_NEXT_ULL(xexpand(KMP_API_NAME_GOMP_LOOP_ULL_ORDERED_RUNTIME_NEXT))
+
+//NOT DEFINED, HPX_ASSERT(FALSE)
+#define DECLEAR_PARALLEL_LOOP_START(func)                                              \
+    extern "C" void func(void (*task)(void *), void *data,                     \
+        unsigned num_threads, long lb, long ub, long str, long chunk_sz);
+DECLEAR_PARALLEL_LOOP_START(xexpand(KMP_API_NAME_GOMP_PARALLEL_LOOP_STATIC_START));
+DECLEAR_PARALLEL_LOOP_START(xexpand(KMP_API_NAME_GOMP_PARALLEL_LOOP_DYNAMIC_START));
+DECLEAR_PARALLEL_LOOP_START(xexpand(KMP_API_NAME_GOMP_PARALLEL_LOOP_GUIDED_START));
+DECLEAR_PARALLEL_LOOP_START(xexpand(KMP_API_NAME_GOMP_PARALLEL_LOOP_RUNTIME_START));
+
+
 #define DECLEAR_PARALLEL_LOOP(func)                                            \
     extern "C" void func(void (*task)(void *), void *data,                     \
         unsigned num_threads, long lb, long ub, long str, long chunk_sz,       \
@@ -85,6 +124,9 @@ DECLEAR_PARALLEL_LOOP(xexpand(KMP_API_NAME_GOMP_PARALLEL_LOOP_DYNAMIC))
 DECLEAR_PARALLEL_LOOP(xexpand(KMP_API_NAME_GOMP_PARALLEL_LOOP_STATIC))
 DECLEAR_PARALLEL_LOOP(xexpand(KMP_API_NAME_GOMP_PARALLEL_LOOP_GUIDED))
 DECLEAR_PARALLEL_LOOP(xexpand(KMP_API_NAME_GOMP_PARALLEL_LOOP_RUNTIME))
+
+extern "C" void
+xexpand(KMP_API_NAME_GOMP_LOOP_END)(void);
 
 extern "C" void
 xexpand(KMP_API_NAME_GOMP_LOOP_END_NOWAIT)(void);
