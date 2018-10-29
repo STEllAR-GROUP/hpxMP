@@ -27,6 +27,7 @@ set(tests
         par_nested
         par_single
         sections
+        sections_2
         #single_copyprivate #failure sometime
         #single_copyprivate_2   #failure sometime
         #single_copyprivate_1var    #failure sometime
@@ -35,7 +36,7 @@ set(tests
         task_fp
         task_tree
         taskwait
-        #taskwait_2     #failure sometime
+        taskwait_2
         #threadprivate  #failure sometime
         )
 
