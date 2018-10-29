@@ -767,12 +767,12 @@ PARALLEL_LOOP(xexpand(KMP_API_NAME_GOMP_PARALLEL_LOOP_RUNTIME), kmp_sch_runtime,
 //        (str > 0) ? (ub - 1) : (ub + 1), str, chunk_sz);
 //}
 
-//TODO:
 void
 xexpand(KMP_API_NAME_GOMP_TASKGROUP_START)(void) {
 #if defined DEBUG && defined HPXMP_HAVE_TRACE
     std::cout << "KMP_API_NAME_GOMP_TASKGROUP_START" << std::endl;
 #endif
+    __kmpc_taskgroup(nullptr, 0);
 }
 
 void
@@ -780,6 +780,7 @@ xexpand(KMP_API_NAME_GOMP_TASKGROUP_END)(void) {
 #if defined DEBUG && defined HPXMP_HAVE_TRACE
     std::cout << "KMP_API_NAME_GOMP_TASKGROUP_END" << std::endl;
 #endif
+    __kmpc_end_taskgroup(nullptr, 0);
 }
 
 #if RELEASE_BUILD

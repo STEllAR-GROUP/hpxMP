@@ -150,4 +150,10 @@ xexpand(KMP_API_NAME_GOMP_SECTIONS_END)(void);
 extern "C" void
 xexpand(KMP_API_NAME_GOMP_SECTIONS_END_NOWAIT)(void);
 
+extern "C" void
+xexpand(KMP_API_NAME_GOMP_TASKGROUP_START)(void);
+
+extern "C" void
+xexpand(KMP_API_NAME_GOMP_TASKGROUP_END)(void);
+
 #endif //HPXMP_GCC_HPXMP_H
