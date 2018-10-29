@@ -3,7 +3,7 @@
 
 # hpxMP: An OpenMP runtime implemented using [HPX](https://github.com/STEllAR-GROUP/hpx)
 
-hpxMP is a portabl, scalable and flexible application programming interface using OpenMP specification 
+hpxMP is a portable, scalable and flexible application programming interface using OpenMP specification 
 that supports multi-platform shared memory multiprocessing programming in C/ C++. OpenMP runtime shared
 library such as libomp.so, libgomp.so can be replaced with this library when you are running a OpenMP
 application.
@@ -21,7 +21,7 @@ Currently, STE||AR group is developing [Phylanx](https://github.com/STEllAR-GROU
 An Asynchronous Distributed C++ Array Processing Toolkit. 
 
 Phylanx relies on OpenMP and HPX, However, OpenMP and HPX "fight against" each other
-as they are both controlling concurrency, doing thread scheduling, which causing performance disaster.
+as they are both controlling concurrency, doing thread scheduling, which causes performance disaster.
 
 The idea to solve this is to replace OpenMP runtime with hpxMP runtime, thus HPX will control concurrency itself.
 
@@ -33,7 +33,7 @@ and can be used in general purpose such as scientific parallel computing.
 
 The intel and gcc openMP runtime calls are implemented in intel_hpxMP.cpp/ gcc_hpxMP.cpp
 
-The bulk of the work is donein hpx_runtime.cpp.
+The bulk of the work is done in hpx_runtime.cpp.
 
 The OMPT support is implemented in ompt_hpx_general.cpp
 
