@@ -411,7 +411,7 @@ LOOP_NEXT(xexpand(KMP_API_NAME_GOMP_LOOP_ORDERED_RUNTIME_NEXT), \
 //    return status;
 //}
 
-//TODO:
+
 void
 xexpand(KMP_API_NAME_GOMP_LOOP_END)(void) {
 #if defined DEBUG && defined HPXMP_HAVE_TRACE
@@ -623,13 +623,12 @@ xexpand(KMP_API_NAME_GOMP_TASKWAIT)(void)
 // the dynamically scheduled workshare, even if the sections aren't ordered.
 //
 
-//TODO:
 unsigned
 xexpand(KMP_API_NAME_GOMP_SECTIONS_START)(unsigned count) {
 #if defined DEBUG && defined HPXMP_HAVE_TRACE
     std::cout << "KMP_API_NAME_GOMP_SECTIONS_START" << std::endl;
 #endif
-    return 0;
+    HPX_ASSERT(false);
 }
 
 unsigned
@@ -637,7 +636,17 @@ xexpand(KMP_API_NAME_GOMP_SECTIONS_NEXT)(void) {
 #if defined DEBUG && defined HPXMP_HAVE_TRACE
     std::cout << "KMP_API_NAME_GOMP_SECTIONS_NEXT" << std::endl;
 #endif
-    return 0;
+    int status;
+    int64_t lb, ub, stride;
+    int gtid = hpx_backend->get_thread_num();
+
+    status = __kmpc_dispatch_next_8(nullptr, gtid, NULL, &lb, &ub, &stride);
+    if (status) {
+    }
+    else {
+        lb = 0;
+    }
+    return (unsigned)lb;
 }
 
 void
@@ -646,6 +655,7 @@ xexpand(KMP_API_NAME_GOMP_PARALLEL_SECTIONS_START)(void (*task) (void *), void *
 #if defined DEBUG && defined HPXMP_HAVE_TRACE
     std::cout << "KMP_API_NAME_GOMP_PARALLEL_SECTIONS_START" << std::endl;
 #endif
+    HPX_ASSERT(false);
 }
 
 void
@@ -653,6 +663,8 @@ xexpand(KMP_API_NAME_GOMP_SECTIONS_END)(void) {
 #if defined DEBUG && defined HPXMP_HAVE_TRACE
     std::cout << "KMP_API_NAME_GOMP_SECTIONS_END" << std::endl;
 #endif
+    int gtid = hpx_backend->get_thread_num();
+    __kmpc_barrier(nullptr, gtid);
 }
 
 void
@@ -699,6 +711,17 @@ xexpand(KMP_API_NAME_GOMP_PARALLEL_SECTIONS)(void (*task) (void *), void *data,
 #if defined DEBUG && defined HPXMP_HAVE_TRACE
     std::cout << "KMP_API_NAME_GOMP_PARALLEL_SECTIONS" << std::endl;
 #endif
+    //this is very similar to parallel loop
+    //from gomp parallel
+    start_backend();
+    //from __kmpc_push_num_threads
+    omp_task_data * my_data = hpx_backend->get_task_data();
+    my_data->set_threads_requested(num_threads);
+
+    __kmp_GOMP_fork_call(task,
+        (microtask_t) __kmp_GOMP_parallel_microtask_wrapper, 9, task, data,
+        num_threads, nullptr, kmp_sch_dynamic_chunked, (int64_t) 1,
+        (int64_t) count, (int64_t) 1, (int64_t) 1);
 }
 
 //from gomp parallel

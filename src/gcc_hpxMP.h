@@ -131,4 +131,23 @@ xexpand(KMP_API_NAME_GOMP_LOOP_END)(void);
 extern "C" void
 xexpand(KMP_API_NAME_GOMP_LOOP_END_NOWAIT)(void);
 
+//sections
+extern "C" unsigned
+xexpand(KMP_API_NAME_GOMP_SECTIONS_START)(unsigned count);
+
+extern "C" void
+xexpand(KMP_API_NAME_GOMP_PARALLEL_SECTIONS)(void (*task) (void *), void *data,
+                                             unsigned num_threads, unsigned count, unsigned flags);
+extern "C" void
+xexpand(KMP_API_NAME_GOMP_PARALLEL_SECTIONS_START)(void (*task) (void *), void *data,
+                                                   unsigned num_threads, unsigned count);
+extern "C" unsigned
+xexpand(KMP_API_NAME_GOMP_SECTIONS_NEXT)(void);
+
+extern "C" void
+xexpand(KMP_API_NAME_GOMP_SECTIONS_END)(void);
+
+extern "C" void
+xexpand(KMP_API_NAME_GOMP_SECTIONS_END_NOWAIT)(void);
+
 #endif //HPXMP_GCC_HPXMP_H
