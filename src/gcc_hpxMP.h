@@ -7,6 +7,15 @@
 #define HPXMP_GCC_HPXMP_H
 
 #include "kmp_ftn_os.h"
+
+typedef enum kmp_cancel_kind_t {
+    cancel_noreq = 0,
+    cancel_parallel = 1,
+    cancel_loop = 2,
+    cancel_sections = 3,
+    cancel_taskgroup = 4
+} kmp_cancel_kind_t;
+
 extern "C" void
 xexpand(KMP_API_NAME_GOMP_PARALLEL)(void (*task)(void *), void *data, unsigned num_threads, unsigned int flags);
 extern "C" void 

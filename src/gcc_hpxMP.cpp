@@ -704,7 +704,6 @@ xexpand(KMP_API_NAME_GOMP_PARALLEL)(void (*task)(void *), void *data, unsigned n
     __kmp_GOMP_fork_call(task,(microtask_t )__kmp_GOMP_microtask_wrapper, 2, task, data);
 }
 
-//TODO:
 void
 xexpand(KMP_API_NAME_GOMP_PARALLEL_SECTIONS)(void (*task) (void *), void *data,
                                              unsigned num_threads, unsigned count, unsigned flags) {
@@ -790,7 +789,22 @@ kmp_int32 __kmp_gomp_to_omp_cancellation_kind(int gomp_kind) {
 #if defined DEBUG && defined HPXMP_HAVE_TRACE
     std::cout << "__kmp_gomp_to_omp_cancellation_kind" << std::endl;
 #endif
-    return 0;
+    kmp_int32 cncl_kind = 0;
+    switch(gomp_kind) {
+        case 1:
+            cncl_kind = cancel_parallel;
+            break;
+        case 2:
+            cncl_kind = cancel_loop;
+            break;
+        case 4:
+            cncl_kind = cancel_sections;
+            break;
+        case 8:
+            cncl_kind = cancel_taskgroup;
+            break;
+    }
+    return cncl_kind;
 }
 
 bool
@@ -798,7 +812,8 @@ xexpand(KMP_API_NAME_GOMP_CANCELLATION_POINT)(int which) {
 #if defined DEBUG && defined HPXMP_HAVE_TRACE
     std::cout << "KMP_API_NAME_GOMP_CANCELLATION_POINT" << std::endl;
 #endif
-    return true;
+    HPX_ASSERT(false);
+    return false;
 }
 
 bool
@@ -806,7 +821,7 @@ xexpand(KMP_API_NAME_GOMP_BARRIER_CANCEL)(void) {
 #if defined DEBUG && defined HPXMP_HAVE_TRACE
     std::cout << "KMP_API_NAME_GOMP_BARRIER_CANCEL" << std::endl;
 #endif
-    return true;
+    return __kmpc_cancel_barrier(nullptr, 0);
 }
 
 bool
@@ -814,7 +829,8 @@ xexpand(KMP_API_NAME_GOMP_CANCEL)(int which, bool do_cancel) {
 #if defined DEBUG && defined HPXMP_HAVE_TRACE
     std::cout << "KMP_API_NAME_GOMP_CANCEL" << std::endl;
 #endif
-    return true;
+    HPX_ASSERT(false);
+    return false;
 }
 
 bool
@@ -822,7 +838,7 @@ xexpand(KMP_API_NAME_GOMP_SECTIONS_END_CANCEL)(void) {
 #if defined DEBUG && defined HPXMP_HAVE_TRACE
     std::cout << "KMP_API_NAME_GOMP_SECTIONS_END_CANCEL" << std::endl;
 #endif
-    return true;
+    return __kmpc_cancel_barrier(nullptr, 0);
 }
 
 bool
@@ -830,7 +846,7 @@ xexpand(KMP_API_NAME_GOMP_LOOP_END_CANCEL)(void) {
 #if defined DEBUG && defined HPXMP_HAVE_TRACE
     std::cout << "KMP_API_NAME_GOMP_LOOP_END_CANCEL" << std::endl;
 #endif
-    return true;
+    return __kmpc_cancel_barrier(nullptr, 0);
 }
 
 
