@@ -1,0 +1,139 @@
+/*--- Mandatory Events (to be implemented summer, 2018) ---*/
+
+ompt_callback_thread_begin,      1) /* thread begin */
+    APEX expects valid data in:
+        ompt_thread_type_t thread_type,       /* type of thread                      */
+        ompt_data_t *thread_data              /* data of thread                      */
+
+ompt_callback_thread_end,        2) /* thread end */
+    APEX expects valid data in:
+        ompt_data_t *thread_data              /* data of thread                      */
+
+ompt_callback_parallel_begin,    3) /* parallel begin */
+    APEX expects valid data in:
+        ompt_data_t *parallel_data,                  /* data of parallel region             */
+        ompt_invoker_t invoker,                      /* invoker of master task              */
+        const void *codeptr_ra                       /* return address of runtime call      */
+    APEX doesn't (yet) need:
+        ompt_data_t *encountering_task_data,         /* data of encountering task           */
+        const omp_frame_t *encountering_task_frame,  /* frame data of encountering task     */
+        unsigned int requested_team_size,            /* requested number of threads in team */
+
+ompt_callback_parallel_end,      4) /* parallel end */
+    APEX expects valid data in:
+        ompt_data_t *parallel_data,           /* data of parallel region             */
+        ompt_invoker_t invoker,               /* invoker of master task              */
+        const void *codeptr_ra                /* return address of runtime call      */
+    APEX doesn't (yet) need:
+        ompt_data_t *encountering_task_data,  /* data of encountering task           */
+
+ompt_callback_task_create,       5) /* task begin */
+    APEX expects valid data in:
+        ompt_data_t *new_task_data,                  /* data of created task                */
+        int type,                                    /* type of created task                */
+        const void *codeptr_ra                       /* return address of runtime call      */
+    APEX doesn't (yet) need:
+        ompt_data_t *encountering_task_data,         /* data of parent task                 */
+        const omp_frame_t *encountering_task_frame,  /* frame data for parent task          */
+        int has_dependences,                         /* created task has dependences        */
+
+ompt_callback_task_schedule,     6) /* task schedule */
+    APEX expects valid data in:
+        ompt_data_t *prior_task_data,         /* data of prior task                  */
+        ompt_task_status_t prior_task_status, /* status of prior task                */
+        ompt_data_t *next_task_data           /* data of next task                   */
+
+ompt_callback_implicit_task,     7) /* implicit task */
+    APEX expects valid data in:
+        ompt_scope_endpoint_t endpoint,       /* endpoint of implicit task           */
+        ompt_data_t *parallel_data,           /* data of parallel region             */
+        ompt_data_t *task_data,               /* data of implicit task               */
+    APEX doesn't (yet) need:
+        unsigned int team_size,               /* team size                           */
+        unsigned int thread_num               /* thread number of calling thread     */
+
+/* Optional Events (to be implemented summer, 2018) */
+
+ompt_callback_sync_region_wait,  16) /* sync region wait begin or end */
+    APEX expects valid data in:
+        ompt_sync_region_kind_t kind,         /* kind of sync region                 */
+        ompt_scope_endpoint_t endpoint,       /* endpoint of sync region             */
+        ompt_data_t *parallel_data,           /* data of parallel region             */
+        ompt_data_t *task_data,               /* data of task                        */
+        const void *codeptr_ra                /* return address of runtime call      */
+
+ompt_callback_work,              20) /* task at work begin or end */
+    APEX expects valid data in:
+        ompt_work_type_t wstype,              /* type of work region                 */
+        ompt_scope_endpoint_t endpoint,       /* endpoint of work region             */
+        ompt_data_t *parallel_data,           /* data of parallel region             */
+        ompt_data_t *task_data,               /* data of task                        */
+        const void *codeptr_ra                /* return address of runtime call      */
+    APEX doesn't (yet) need:
+        uint64_t count,                       /* quantity of work                    */
+
+ompt_callback_master,            21) /* task at master begin or end */
+    APEX expects valid data in:
+        ompt_scope_endpoint_t endpoint,       /* endpoint of master region           */
+        ompt_data_t *parallel_data,           /* data of parallel region             */
+        ompt_data_t *task_data,               /* data of task                        */
+        const void *codeptr_ra                /* return address of runtime call      */
+
+ompt_callback_sync_region,       23) /* sync region begin or end */
+    APEX expects valid data in:
+        ompt_sync_region_kind_t kind,         /* kind of sync region                 */
+        ompt_scope_endpoint_t endpoint,       /* endpoint of sync region             */
+        ompt_data_t *parallel_data,           /* data of parallel region             */
+        ompt_data_t *task_data,               /* data of task                        */
+        const void *codeptr_ra                /* return address of runtime call      */
+
+ompt_callback_flush,             29) /* after executing flush */
+    APEX expects valid data in:
+        ompt_data_t *thread_data,             /* data of thread                      */
+        const void *codeptr_ra                /* return address of runtime call      */
+
+ompt_callback_cancel,            30) /* cancel innermost binding region */
+    APEX expects valid data in:
+        ompt_data_t *task_data,               /* data of task                        */
+        int flags,                            /* cancel flags                        */
+        const void *codeptr_ra                /* return address of runtime call      */
+
+/* Mandatory Events (deferred until 2019 or later) */
+ompt_callback_target,            8) /* target */
+    Reason for deferral: No HPX device support yet
+ompt_callback_target_data_op,    9) /* target data op */
+    Reason for deferral: No HPX device support yet
+ompt_callback_target_submit,     10) /* target  submit */
+    Reason for deferral: No HPX device support yet
+ompt_callback_control_tool,      11) /* control tool */
+    Reason for deferral: No HPX device support yet
+ompt_callback_device_initialize, 12) /* device initialize */
+    Reason for deferral: No HPX device support yet
+ompt_callback_device_finalize,   13) /* device finalize */
+    Reason for deferral: No HPX device support yet
+ompt_callback_device_load,       14) /* device load */
+    Reason for deferral: No HPX device support yet
+ompt_callback_device_unload,     15) /* device unload */
+    Reason for deferral: No HPX device support yet
+
+/* Optional Events (deferred until 2019 or later) */
+ompt_callback_mutex_released,    17) /* mutex released */
+    Reason for deferral: High overhead event, low priority
+ompt_callback_task_dependences,  18) /* report task dependences */
+    Reason for deferral: Captured with other means (HPX task dependency)
+ompt_callback_task_dependence,   19) /* report task dependence */
+    Reason for deferral: Captured with other means (HPX task dependency)
+ompt_callback_target_map,        22) /* target map */
+    Reason for deferral: No HPX device support yet
+ompt_callback_lock_init,         24) /* lock init */
+    Reason for deferral: High overhead event, low priority
+ompt_callback_lock_destroy,      25) /* lock destroy */
+    Reason for deferral: High overhead event, low priority
+ompt_callback_mutex_acquire,     26) /* mutex acquire */
+    Reason for deferral: High overhead event, low priority
+ompt_callback_mutex_acquired,    27) /* mutex acquired */
+    Reason for deferral: High overhead event, low priority
+ompt_callback_nest_lock,         28) /* nest lock */
+    Reason for deferral: High overhead event, low priority
+ompt_callback_idle,              31) /* begin or end idle state */
+    Reason for deferral: High overhead event, low priority

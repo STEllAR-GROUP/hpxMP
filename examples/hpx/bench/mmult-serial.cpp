@@ -4,7 +4,7 @@
 
 #include <sys/time.h>
 
-#include <matrix_block.h>
+#include "matrix_block.h"
 
 using hpx::lcos::shared_future;
 using hpx::lcos::future;

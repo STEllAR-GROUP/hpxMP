@@ -44,18 +44,20 @@ int main(int argc, char **argv)
     {
         printf("%d", result[i]);
     }
-    for (int i = 0; i < 5; i++)
-        if (threads >= 5)
-        {
-            for (int i = 0; i < 5; i++)
-                if (result[i] != i)
-                    return 1;
-        }
-        else
-        {
+    for (int i = 0; i < 5; i++) {
             for (int i = 0; i < 5; i++)
                 if (!inRange(0, threads, omp_get_thread_num()))
                     return 1;
         }
+
+    int count = 0;
+    if(threads !=1){
+        for(int i = 0; i <5; i++){
+            if(result[i] == 0)
+                count++;
+        }
+    }
+    if (count == 5)
+        return 1;
     return 0;
 }

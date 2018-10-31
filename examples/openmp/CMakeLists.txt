@@ -5,6 +5,5 @@
 
 if(HPXMP_WITH_OMPT)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fopenmp")
-    add_executable(ex_ompt_hello_world hello_world.cpp)
-    add_executable(ex_ompt_task task_ex.cpp)
+    add_executable(ex_hello_world hello_world.cpp)
 endif()
