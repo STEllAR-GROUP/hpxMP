@@ -48,7 +48,7 @@ correctness of the hpxMP library.
 
 # hpxMP OMPT example
 In the hpxMP build directory, under folder examples/ompt,  a simple hello world and task example is provided.
-To run the hello world example, the registered callbacks are in cllback.h, simply type
+To run the hello world example, the registered callbacks are in callback.h, simply type
 ```bash
 OMP_NUM_THREADS=N LD_PRELOAD=..path_to_hpxMP_build_dir/libhpxmp.so ./hello_world
 ```
@@ -104,5 +104,5 @@ ompt_event_thread_end: thread_id=562949953421313
 0: ompt_event_runtime_shutdown
 ```
 
-**Note:** More test cases are under folder tests/ompt, which are run on regular bases to check the 
+**Note:** More test cases are under folder tests/ompt, which are run on regular basis to check the 
 correctness of the hpxMP OMPT.

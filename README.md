@@ -5,7 +5,7 @@
 
 hpxMP is a portable, scalable and flexible application programming interface using OpenMP specification 
 that supports multi-platform shared memory multiprocessing programming in C/ C++. OpenMP runtime shared
-library such as libomp.so, libgomp.so can be replaced with this library when you are running a OpenMP
+library such as libomp.so, libgomp.so can be replaced with this library when you are running an OpenMP
 application.
 
 A recorded introduction video of hpxMP can be found
@@ -37,7 +37,7 @@ The bulk of the work is done in hpx_runtime.cpp.
 
 The OMPT support is implemented in ompt_hpx_general.cpp
 
-The tests are under folder tests/, which are performing automatic tests fot this program. 
+The tests are under folder tests/, which are performing automatic tests for this program. 
 Some of the tests are adapted from examples under folder examples/omp/tests/src which were written by Jeremy Kemp.
 
 This is a different hpx_runtime than the one defined in the hpx implementation, and will eventually
