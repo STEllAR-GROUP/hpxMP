@@ -4,9 +4,9 @@
 # hpxMP: An OpenMP runtime implemented using [HPX](https://github.com/STEllAR-GROUP/hpx)
 
 hpxMP is a portable, scalable and flexible application programming interface using OpenMP specification 
-that supports multi-platform shared memory multiprocessing programming in C/ C++. OpenMP runtime shared
+that supports multi-platform shared memory multiprocessing programming in C/ C++. hpxMP is originally developed by our collaborator, Jeremy Kemp, hpxMP maps OpenMP calls to their equivalent HPX functions. OpenMP runtime shared
 library such as libomp.so, libgomp.so can be replaced with this library when you are running an OpenMP
-application.
+application. 
 
 A recorded introduction video of hpxMP can be found
  [here](https://www.youtube.com/watch?v=ajDGWPDrcxU&index=12&list=PL7vEgTL3FalbVFwzkXLHpBRKlcJNULW1g).
@@ -17,13 +17,12 @@ integration service tracks the current build status for the master branch:
 
 # Motivation
 
-Currently, STE||AR group is developing [Phylanx](https://github.com/STEllAR-GROUP/phylanx), 
-An Asynchronous Distributed C++ Array Processing Toolkit. 
-
-Phylanx relies on OpenMP and HPX, However, OpenMP and HPX "fight against" each other
+OpenMP and HPX "fight against" each other if they are used in the same application
 as they are both controlling concurrency, doing thread scheduling, which causes performance disaster.
+The idea to solve this is to replace OpenMP runtime with hpxMP runtime, thus HPX will control concurrency itself. In this way, we prevent the OpenMP and HPX runtime systems from competing for resources when they are used in the same application. 
 
-The idea to solve this is to replace OpenMP runtime with hpxMP runtime, thus HPX will control concurrency itself.
+Currently, STE||AR group is developing [Phylanx](https://github.com/STEllAR-GROUP/phylanx), 
+An Asynchronous Distributed C++ Array Processing Toolkit. This ability is useful in the context of Phylanx as our dependencies rely on libraries such as OpenBLAS which use OpenMP to manage their threading. 
 
 For long term goals, a bug free hpxMP runtime updated with 
 most recent OpenMP specification will be implemented,
