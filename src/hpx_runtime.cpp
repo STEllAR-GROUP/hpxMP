@@ -47,7 +47,8 @@ void fini_runtime()
     cout << "Stopping HPX OpenMP runtime" << endl;
 #endif
     //this should only be done if this runtime started hpx
-    hpx::get_runtime().stop();
+    hpx::apply([]() { hpx::finalize(); });
+    hpx::stop();
 #if defined DEBUG
     cout << "Stopped" << endl;
 #endif
