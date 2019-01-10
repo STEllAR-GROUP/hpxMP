@@ -56,6 +56,9 @@ __kmpc_for_static_init_4( ident_t *loc, int32_t gtid, int32_t schedtype,
                           int32_t *p_last_iter,int32_t *p_lower, int32_t *p_upper, 
                           int32_t *p_stride, int32_t incr, int32_t chunk ) 
 {
+    #if defined DEBUG && defined HPXMP_HAVE_TRACE
+        std::cout<<"__kmpc_for_static_init_4"<<std::endl;
+    #endif
     omp_static_init<int>( gtid, schedtype, p_last_iter, p_lower, p_upper,
                           p_stride, incr, chunk );
 }
@@ -65,6 +68,9 @@ __kmpc_for_static_init_4u( ident_t *loc, int32_t gtid, int32_t schedtype,
                            int32_t *p_last_iter, uint32_t *p_lower, uint32_t *p_upper,
                            int32_t *p_stride, int32_t incr, int32_t chunk )
 {
+    #if defined DEBUG && defined HPXMP_HAVE_TRACE
+        std::cout<<"__kmpc_for_static_init_4u"<<std::endl;
+    #endif
     omp_static_init<uint32_t, int>( gtid, schedtype, p_last_iter,
                                     p_lower, p_upper, p_stride, incr, chunk );
 }
@@ -75,6 +81,9 @@ __kmpc_for_static_init_8( ident_t *loc, int32_t gtid,
                           int64_t *p_lower, int64_t *p_upper, 
                           int64_t *p_stride, int64_t incr, int64_t chunk ) 
 {
+    #if defined DEBUG && defined HPXMP_HAVE_TRACE
+        std::cout<<"__kmpc_for_static_init_8"<<std::endl;
+    #endif
     omp_static_init<int64_t>( gtid, schedtype, p_last_iter,
                                p_lower, p_upper, p_stride, incr, chunk );
 }
@@ -85,6 +94,9 @@ __kmpc_for_static_init_8u( ident_t *loc, int32_t gtid,
                            uint64_t *p_lower, uint64_t *p_upper,
                            int64_t *p_stride, int64_t incr, int64_t chunk )
 {
+    #if defined DEBUG && defined HPXMP_HAVE_TRACE
+        std::cout<<"__kmpc_for_static_init_8u"<<std::endl;
+    #endif
     omp_static_init<uint64_t, int64_t>( gtid, schedtype, p_last_iter,
                                     p_lower, p_upper, p_stride, incr, chunk );
 }
@@ -92,6 +104,9 @@ __kmpc_for_static_init_8u( ident_t *loc, int32_t gtid,
 void
 __kmpc_for_static_fini( ident_t *loc, int32_t gtid ){
     //Only seems to do internal tracking in intel runtime
+    #if defined DEBUG && defined HPXMP_HAVE_TRACE
+        std::cout<<"__kmpc_for_static_fini"<<std::endl;
+    #endif
 }
 
 //------------------------------------------------------------------------
@@ -131,6 +146,9 @@ void scheduler_init( int gtid, int schedtype, T lower, T upper, D stride, D chun
 void 
 __kmpc_dispatch_init_4( ident_t *loc, int32_t gtid, enum sched_type schedule,
                         int32_t lb, int32_t ub, int32_t st, int32_t chunk ) {
+    #if defined DEBUG && defined HPXMP_HAVE_TRACE
+        std::cout<<"__kmpc_dispatch_init_4"<<std::endl;
+    #endif
     scheduler_init<int32_t>( gtid, schedule, lb, ub, st, chunk );
 }
 
@@ -138,6 +156,9 @@ void
 __kmpc_dispatch_init_4u( ident_t *loc, int32_t gtid, enum sched_type schedule,
                          uint32_t lb, uint32_t ub, 
                          int32_t st, int32_t chunk ) {
+    #if defined DEBUG && defined HPXMP_HAVE_TRACE
+        std::cout<<"__kmpc_dispatch_init_4u"<<std::endl;
+    #endif
     scheduler_init<uint32_t, int32_t>( gtid, schedule, lb, ub, st, chunk );
 }
 
@@ -145,6 +166,9 @@ void
 __kmpc_dispatch_init_8( ident_t *loc, int32_t gtid, enum sched_type schedule,
                         int64_t lb, int64_t ub, 
                         int64_t st, int64_t chunk ) {
+    #if defined DEBUG && defined HPXMP_HAVE_TRACE
+        std::cout<<"__kmpc_dispatch_init_8"<<std::endl;
+    #endif
     scheduler_init<int64_t>( gtid, schedule, lb, ub, st, chunk );
 }
 
@@ -152,6 +176,9 @@ void
 __kmpc_dispatch_init_8u( ident_t *loc, int32_t gtid, enum sched_type schedule,
                          uint64_t lb, uint64_t ub, 
                          int64_t st, int64_t chunk ) {
+    #if defined DEBUG && defined HPXMP_HAVE_TRACE
+        std::cout<<"__kmpc_dispatch_init_8u"<<std::endl;
+    #endif
     scheduler_init<uint64_t, int64_t>( gtid, schedule, lb, ub, st, chunk );
 }
 
@@ -258,40 +285,67 @@ int kmp_next( int gtid, int *p_last, T *p_lower, T *p_upper, D *p_stride ) {
 int
 __kmpc_dispatch_next_4( ident_t *loc, int32_t gtid, int32_t *p_last,
                         int32_t *p_lb, int32_t *p_ub, int32_t *p_st ){
+    #if defined DEBUG && defined HPXMP_HAVE_TRACE
+        std::cout<<"__kmpc_dispatch_next_4"<<std::endl;
+    #endif
     return kmp_next<int32_t>(gtid, p_last, p_lb, p_ub, p_st);
 }
 
 int
 __kmpc_dispatch_next_4u( ident_t *loc, int32_t gtid, int32_t *p_last,
                         uint32_t *p_lb, uint32_t *p_ub, int32_t *p_st ){
+    #if defined DEBUG && defined HPXMP_HAVE_TRACE
+        std::cout<<"__kmpc_dispatch_next_4u"<<std::endl;
+    #endif
     return kmp_next<uint32_t, int32_t>(gtid, p_last, p_lb, p_ub, p_st);
 }
 
 int
 __kmpc_dispatch_next_8( ident_t *loc, int32_t gtid, int32_t *p_last,
                         int64_t *p_lb, int64_t *p_ub, int64_t *p_st ){
+    #if defined DEBUG && defined HPXMP_HAVE_TRACE
+        std::cout<<"__kmpc_dispatch_next_8"<<std::endl;
+    #endif
     return kmp_next<int64_t>(gtid, p_last, p_lb, p_ub, p_st);
 }
 
 int
 __kmpc_dispatch_next_8u( ident_t *loc, int32_t gtid, int32_t *p_last,
                         uint64_t *p_lb, uint64_t *p_ub, int64_t *p_st ){
+    #if defined DEBUG && defined HPXMP_HAVE_TRACE
+        std::cout<<"__kmpc_dispatch_next_8u"<<std::endl;
+    #endif
     return kmp_next<uint64_t, int64_t>(gtid, p_last, p_lb, p_ub, p_st);
 }
 
 void __kmpc_dispatch_fini_4( ident_t *loc, kmp_int32 gtid ){
+    #if defined DEBUG && defined HPXMP_HAVE_TRACE
+        std::cout<<"__kmpc_dispatch_fini_4"<<std::endl;
+    #endif
 }
 
 void __kmpc_dispatch_fini_8( ident_t *loc, kmp_int32 gtid ){
+    #if defined DEBUG && defined HPXMP_HAVE_TRACE
+        std::cout<<"__kmpc_dispatch_fini_8"<<std::endl;
+    #endif
 }
 
 void __kmpc_dispatch_fini_4u( ident_t *loc, kmp_int32 gtid ){
+    #if defined DEBUG && defined HPXMP_HAVE_TRACE
+        std::cout<<"__kmpc_dispatch_fini_4u"<<std::endl;
+    #endif
 }
 
 void __kmpc_dispatch_fini_8u( ident_t *loc, kmp_int32 gtid ){
+    #if defined DEBUG && defined HPXMP_HAVE_TRACE
+        std::cout<<"__kmpc_dispatch_fini_8u"<<std::endl;
+    #endif
 }
 
 void __kmpc_ordered(ident_t *, kmp_int32 global_tid ) {
+    #if defined DEBUG && defined HPXMP_HAVE_TRACE
+        std::cout<<"__kmpc_ordered"<<std::endl;
+    #endif
     int current_loop = hpx_backend->get_task_data()->loop_num - 1;
     auto loop_sched = &(hpx_backend->get_team()->loop_list[ current_loop ]);
     while( loop_sched->ordered_count < loop_sched->first_iter[global_tid] ||
@@ -301,6 +355,9 @@ void __kmpc_ordered(ident_t *, kmp_int32 global_tid ) {
 }
 
 void __kmpc_end_ordered(ident_t *, kmp_int32 global_tid ) {
+    #if defined DEBUG && defined HPXMP_HAVE_TRACE
+        std::cout<<"__kmpc_end_ordered"<<std::endl;
+    #endif
     int current_loop = hpx_backend->get_task_data()->loop_num - 1;
     auto loop_sched = &(hpx_backend->get_team()->loop_list[ current_loop ]);
     loop_sched->ordered_count++;
