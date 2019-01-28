@@ -52,7 +52,7 @@ macro(do_test name)
             )
         #maybe make the omp_num_threads configurable later
     set_tests_properties(${name} PROPERTIES
-            ENVIRONMENT "LD_PRELOAD=${PROJECT_BINARY_DIR}/libhpxmp.so;OMP_NUM_THREADS=2"
+            ENVIRONMENT "LD_PRELOAD=${PROJECT_BINARY_DIR}/libhpxmp.so"
             TIMEOUT 50
             )
 endmacro(do_test)
