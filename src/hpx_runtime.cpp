@@ -13,6 +13,7 @@
 // being compiled as part of HPX itself
 #include <hpx/hpx_start_impl.hpp>
 #include <hpx/runtime/threads/run_as_hpx_thread.hpp>
+#include <hpx/lcos/local/barrier.hpp>
 
 using std::cout;
 using std::endl;
@@ -568,9 +569,7 @@ void hpx_runtime::create_future_task( int gtid, kmp_task_t *thunk,
 void thread_setup( invoke_func kmp_invoke, microtask_t thread_func,
                    int argc, void **argv, int tid,
                    parallel_region *team, omp_task_data *parent,
-                   mutex_type& barrier_mtx,
-                   hpx::lcos::local::condition_variable_any& cond,
-                   int& running_threads )
+                   hpx::lcos::local::barrier& barrier)
 {
     omp_task_data task_data(tid, team, parent);
 
@@ -627,13 +626,7 @@ void thread_setup( invoke_func kmp_invoke, microtask_t thread_func,
     //  reference their parents metadata(task_data above).
     //This combined with the waiting on child tasks above fufills the requirements
     //  of an OpenMP barrier.
-    std::unique_lock<mutex_type> lk(barrier_mtx);
-    if(--running_threads == 0) {
-        //hpx::lcos::local::spinlock::scoped_lock lk(barrier_mtx);
-        //std::unique_lock<mutex_type> lk(barrier_mtx);
-        hpx::util::ignore_while_checking<std::unique_lock<mutex_type> > il(&lk);
-        cond.notify_all();
-    }
+    barrier.wait();
 }
 
 // This is the only place where get_thread can't be called, since
@@ -660,25 +653,19 @@ void fork_worker( invoke_func kmp_invoke, microtask_t thread_func,
 #ifdef OMP_COMPLIANT
     team.exec.reset(new local_priority_queue_executor(parent->threads_requested));
 #endif
-    hpx::lcos::local::condition_variable_any  cond;
-    mutex_type barrier_mtx;
     int running_threads = parent->threads_requested;
+    hpx::lcos::local::barrier barrier(running_threads+1);
 
     for( int i = 0; i < parent->threads_requested; i++ ) {
         hpx::applier::register_thread_nullary(
                 std::bind( &thread_setup, kmp_invoke, thread_func, argc, argv, i, &team, parent,
-                           boost::ref(barrier_mtx), boost::ref(cond), boost::ref(running_threads) ),
+                           boost::ref(barrier)),
                 "omp_implicit_task", hpx::threads::pending,
                 true, hpx::threads::thread_priority_low, i );
                 //true, hpx::threads::thread_priority_normal, i );
     }
-    {
-        //hpx::lcos::local::spinlock::scoped_lock lk(barrier_mtx);
-        std::unique_lock<mutex_type> lk(barrier_mtx);
-        while( running_threads > 0 ) {
-            cond.wait(lk);
-        }
-    }
+    barrier.wait();
+
     //The executor containing the tasks will be destroyed as this call goes out
     //of scope, which will wait on all tasks contained in it. So, nothing needs
     //to be done here for it.
