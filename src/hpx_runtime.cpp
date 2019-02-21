@@ -569,7 +569,7 @@ void hpx_runtime::create_future_task( int gtid, kmp_task_t *thunk,
 void thread_setup( invoke_func kmp_invoke, microtask_t thread_func,
                    int argc, void **argv, int tid,
                    parallel_region *team, omp_task_data *parent,
-                   hpx::lcos::local::barrier& barrier)
+                   barrier& threadBarrier)
 {
     omp_task_data task_data(tid, team, parent);
 
@@ -626,7 +626,7 @@ void thread_setup( invoke_func kmp_invoke, microtask_t thread_func,
     //  reference their parents metadata(task_data above).
     //This combined with the waiting on child tasks above fufills the requirements
     //  of an OpenMP barrier.
-    barrier.wait();
+    threadBarrier.wait();
 }
 
 // This is the only place where get_thread can't be called, since
@@ -654,17 +654,17 @@ void fork_worker( invoke_func kmp_invoke, microtask_t thread_func,
     team.exec.reset(new local_priority_queue_executor(parent->threads_requested));
 #endif
     int running_threads = parent->threads_requested;
-    hpx::lcos::local::barrier barrier(running_threads+1);
+    barrier threadBarrier(running_threads+1);
 
     for( int i = 0; i < parent->threads_requested; i++ ) {
         hpx::applier::register_thread_nullary(
                 std::bind( &thread_setup, kmp_invoke, thread_func, argc, argv, i, &team, parent,
-                           boost::ref(barrier)),
+                           boost::ref(threadBarrier)),
                 "omp_implicit_task", hpx::threads::pending,
                 true, hpx::threads::thread_priority_low, i );
                 //true, hpx::threads::thread_priority_normal, i );
     }
-    barrier.wait();
+    threadBarrier.wait();
 
     //The executor containing the tasks will be destroyed as this call goes out
     //of scope, which will wait on all tasks contained in it. So, nothing needs
