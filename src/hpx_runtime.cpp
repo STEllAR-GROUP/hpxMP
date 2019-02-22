@@ -265,19 +265,8 @@ void hpx_runtime::end_taskgroup()
 void hpx_runtime::task_wait()
 {
     auto *task = get_task_data();
-    //TODO: Is this just an optimization? IT seems unnecessary.
-    //if(task->df_map.size() > 0) {
-    //    task->last_df_task.wait();
-    //}
-    //int count = 0;
-    //int max_count = 10;
-    while( *(task->num_child_tasks) > 0 ) {
-        //int sleep_time = 10*count;
-        //if(count > max_count)
-        //    sleep_time = 10*max_count;
-        //hpx::this_thread::sleep_for(std::chrono::milliseconds(sleep_time));
-        hpx::this_thread::yield();
-    }
+    task->taskBarrier.wait();
+    task->taskBarrier.reset(1);
 }
 
 void task_setup( int gtid, kmp_task_t *task, omp_icv icv,
