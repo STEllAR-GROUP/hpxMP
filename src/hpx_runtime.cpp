@@ -670,6 +670,7 @@ void thread_setup( invoke_func kmp_invoke, microtask_t thread_func,
     int count = 0;
     int max_count = 10;
     while (*(task_data.num_child_tasks) > 0 ) {
+        cout<<"Warning, running into busy waiting in thread setup"<<endl;
         if(count == 0) {
             hpx::this_thread::yield();
         } else {
@@ -735,6 +736,7 @@ void fork_worker( invoke_func kmp_invoke, microtask_t thread_func,
     int count = 0;
     int max_count = 10;
     while(team.num_tasks > 0) {
+        cout<<"Warning, running into busy waiting in fork worker"<<endl;
         if(count == 0) {
             hpx::this_thread::yield();
         } else {
