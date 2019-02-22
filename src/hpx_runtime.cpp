@@ -282,7 +282,7 @@ void hpx_runtime::task_wait()
 
 void task_setup( int gtid, kmp_task_t *task, omp_icv icv,
                  shared_ptr<atomic<int64_t>> parent_task_counter,
-                 parallel_region *team)
+                 parallel_region *team, barrier* taskBarrier)
 {
     auto task_func = task->routine;
     omp_task_data task_data(gtid, team, icv);
@@ -309,6 +309,57 @@ if(! task->gcc)
     task_func(gtid, task);
 else
     ((void (*)(void *))(*(task->routine)))(task->shareds);
+
+    *(parent_task_counter) -= 1;
+#ifndef OMP_COMPLIANT
+    team->num_tasks--;
+#endif
+    if(task->part_id ==0)
+        delete[] (char*)task;
+#if HPXMP_HAVE_OMPT
+    ompt_task_status_t status_fin = ompt_task_complete;
+    /* let OMPT know that we're returning to the callee task */
+    if (ompt_enabled.ompt_callback_task_schedule)
+    {
+        ompt_callbacks.ompt_callback(ompt_callback_task_schedule)(
+            my_task_data, status_fin, prior_task_data);
+    }
+#endif
+//  make sure nothing is accessing this thread data after task_data got destroyed
+    set_thread_data( get_self_id(), reinterpret_cast<size_t>(nullptr));
+    taskBarrier->wait();
+}
+
+////temp as migration of barrier
+void task_setup_temp( int gtid, kmp_task_t *task, omp_icv icv,
+                 shared_ptr<atomic<int64_t>> parent_task_counter,
+                 parallel_region *team)
+{
+    auto task_func = task->routine;
+    omp_task_data task_data(gtid, team, icv);
+    set_thread_data( get_self_id(), reinterpret_cast<size_t>(&task_data));
+#if HPXMP_HAVE_OMPT
+    ompt_data_t *my_task_data = &hpx_backend->get_task_data()->task_data;
+    if (ompt_enabled.ompt_callback_task_create)
+    {
+        ompt_callbacks.ompt_callback(ompt_callback_task_create)(NULL, NULL,
+            my_task_data, ompt_task_explicit, 0, __builtin_return_address(0));
+    }
+    ompt_task_status_t status = ompt_task_others;
+    /* let OMPT know that we're about to run this task */
+    ompt_data_t *prior_task_data =
+        &hpx_backend->get_task_data()->team->parent_data;
+    if (ompt_enabled.ompt_callback_task_schedule)
+    {
+        ompt_callbacks.ompt_callback(ompt_callback_task_schedule)(
+            prior_task_data, status, my_task_data);
+    }
+#endif
+
+    if(! task->gcc)
+        task_func(gtid, task);
+    else
+        ((void (*)(void *))(*(task->routine)))(task->shareds);
 
     *(parent_task_counter) -= 1;
 #ifndef OMP_COMPLIANT
@@ -365,15 +416,14 @@ void hpx_runtime::create_task( kmp_routine_entry_t task_func, int gtid, kmp_task
 #else
         //TODO: add taskgroups in non compliant version
         *(current_task->num_child_tasks) += 1;
+        current_task->taskBarrier.count_up();
         current_task->team->num_tasks++;
         //this fixes hpx::apply changes in hpx backend
         hpx::applier::register_thread_nullary(
             std::bind(&task_setup, gtid, thunk, current_task->icv,
-                current_task->num_child_tasks, current_task->team),
+                current_task->num_child_tasks, current_task->team, &current_task->taskBarrier),
             "omp_explicit_task", hpx::threads::pending, true,
             hpx::threads::thread_priority_normal);
-//        hpx::apply(task_setup, gtid, thunk, current_task->icv,
-//                    current_task->num_child_tasks, current_task->team );
 #endif
     }
 //    else {
@@ -387,7 +437,7 @@ void df_task_wrapper( int gtid, kmp_task_t *task, omp_icv icv,
                       parallel_region *team,
                       vector<shared_future<void>> deps)
 {
-    task_setup( gtid, task, icv, task_counter, team);
+    task_setup_temp( gtid, task, icv, task_counter, team);
 }
 
 #ifdef OMP_COMPLIANT
@@ -447,7 +497,7 @@ void hpx_runtime::create_df_task( int gtid, kmp_task_t *thunk,
                                     task->num_child_tasks, team);
         }
 #else
-        new_task = hpx::async( task_setup, gtid, thunk, task->icv,
+        new_task = hpx::async( task_setup_temp, gtid, thunk, task->icv,
                                 task->num_child_tasks, team);
 #endif
     } else {
@@ -572,6 +622,8 @@ void thread_setup( invoke_func kmp_invoke, microtask_t thread_func,
                    barrier& threadBarrier)
 {
     omp_task_data task_data(tid, team, parent);
+    //count up taskBarrier before set to the thread data
+    task_data.taskBarrier.count_up();
 
     set_thread_data( get_self_id(), reinterpret_cast<size_t>(&task_data));
 
@@ -607,6 +659,8 @@ void thread_setup( invoke_func kmp_invoke, microtask_t thread_func,
     }
 #endif
 }
+    task_data.taskBarrier.wait();
+
     int count = 0;
     int max_count = 10;
     while (*(task_data.num_child_tasks) > 0 ) {
@@ -620,7 +674,6 @@ void thread_setup( invoke_func kmp_invoke, microtask_t thread_func,
         }
         count++;
     }
-
     //This keeps the task_data on this stack allocated. When is that needed?
     //  if tasks are created without a barrier or taskwait, they could still
     //  reference their parents metadata(task_data above).
