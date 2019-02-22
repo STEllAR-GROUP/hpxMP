@@ -286,6 +286,8 @@ void task_setup( int gtid, kmp_task_t *task, omp_icv icv,
 {
     auto task_func = task->routine;
     omp_task_data task_data(gtid, team, icv);
+    //this makes tasks wait for the task it created
+    task_data.taskBarrier.count_up();
     set_thread_data( get_self_id(), reinterpret_cast<size_t>(&task_data));
 #if HPXMP_HAVE_OMPT
     ompt_data_t *my_task_data = &hpx_backend->get_task_data()->task_data;
@@ -325,8 +327,11 @@ else
             my_task_data, status_fin, prior_task_data);
     }
 #endif
+    //this makes tasks wait for the task it created, thus this thread data is not used anymore
+    task_data.taskBarrier.wait();
 //  make sure nothing is accessing this thread data after task_data got destroyed
     set_thread_data( get_self_id(), reinterpret_cast<size_t>(nullptr));
+    //all child tasks has finished if reaching this point, tell parent me and my child tasks are done
     taskBarrier->wait();
 }
 
@@ -416,6 +421,7 @@ void hpx_runtime::create_task( kmp_routine_entry_t task_func, int gtid, kmp_task
 #else
         //TODO: add taskgroups in non compliant version
         *(current_task->num_child_tasks) += 1;
+        //this is waited in thread_setup, create_task is not supposed to wait anything
         current_task->taskBarrier.count_up();
         current_task->team->num_tasks++;
         //this fixes hpx::apply changes in hpx backend
