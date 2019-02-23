@@ -218,7 +218,7 @@ void hpx_runtime::barrier_wait(){
     int count = 1;
     int max_count = 100000;
     while(team->num_tasks > 0) {
-        std::cerr<<"Warning: running into spin wait in barrier_wait"<<endl;
+        std::cerr<<"Warning, running into busy waiting in barrier wait"<<endl;
         if(count == 1) {
             hpx::this_thread::yield();
         } else {
@@ -255,6 +255,7 @@ void hpx_runtime::end_taskgroup()
     task->tg_exec.reset();
 #else
     while( *(task->tg_num_tasks) > 0 ) {
+        std::cerr<<"Warning, running into busy waiting in end_taskgroup"<<std::endl;
         //hpx::this_thread::sleep_for(std::chrono::milliseconds(100));
         hpx::this_thread::yield();
     }
