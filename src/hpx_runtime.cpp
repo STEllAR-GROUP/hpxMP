@@ -212,6 +212,9 @@ void hpx_runtime::barrier_wait(){
         hpx::this_thread::yield();
     }
 #else
+    if(team->num_threads > 1) {
+        team->globalBarrier.wait();
+    }
     int count = 1;
     int max_count = 100000;
     while(team->num_tasks > 0) {
@@ -228,9 +231,6 @@ void hpx_runtime::barrier_wait(){
         //hpx::this_thread::yield();
     }
 #endif
-    if(team->num_threads > 1) {
-        team->globalBarrier.wait();
-    }
 }
 
 //TODO: Does the spec say that outstanding tasks need to end before this begins?
