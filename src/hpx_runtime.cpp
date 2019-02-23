@@ -215,6 +215,7 @@ void hpx_runtime::barrier_wait(){
     int count = 1;
     int max_count = 100000;
     while(team->num_tasks > 0) {
+        std::cerr<<"Warning: running into spin wait in barrier_wait"<<endl;
         if(count == 1) {
             hpx::this_thread::yield();
         } else {
@@ -604,7 +605,7 @@ void hpx_runtime::create_future_task( int gtid, kmp_task_t *thunk,
                                                 *(input_futures[0]), *(input_futures[1]),
                                                 *(input_futures[2]) );
     } else {
-        cout << "too many dependencies for now" << endl;
+        std::cerr << "too many dependencies for now" << endl;
     }
 }
 #endif
@@ -659,7 +660,7 @@ void thread_setup( invoke_func kmp_invoke, microtask_t thread_func,
     int count = 0;
     int max_count = 10;
     while (*(task_data.num_child_tasks) > 0 ) {
-        cout<<"Warning, running into busy waiting in thread setup"<<endl;
+        std::cerr<<"Warning, running into busy waiting in thread setup"<<endl;
         if(count == 0) {
             hpx::this_thread::yield();
         } else {
@@ -725,7 +726,7 @@ void fork_worker( invoke_func kmp_invoke, microtask_t thread_func,
     int count = 0;
     int max_count = 10;
     while(team.num_tasks > 0) {
-        cout<<"Warning, running into busy waiting in fork worker"<<endl;
+        std::cerr<<"Warning, running into busy waiting in fork worker"<<endl;
         if(count == 0) {
             hpx::this_thread::yield();
         } else {
