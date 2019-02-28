@@ -212,26 +212,10 @@ void hpx_runtime::barrier_wait(){
         //hpx::this_thread::sleep_for(std::chrono::milliseconds(100));
         hpx::this_thread::yield();
     }
-#else
+#endif
     if(team->num_threads > 1) {
         team->globalBarrier.wait();
     }
-    int count = 1;
-    int max_count = 100000;
-    while(team->num_tasks > 0) {
-        std::cerr<<"Warning, running into busy waiting in barrier wait"<<endl;
-        if(count == 1) {
-            hpx::this_thread::yield();
-        } else {
-            int sleep_time = count;
-            if(count > max_count)
-                sleep_time = max_count;
-            hpx::this_thread::sleep_for(std::chrono::microseconds(sleep_time));
-        }
-        count = count * 2;
-        //hpx::this_thread::yield();
-    }
-#endif
 }
 
 //TODO: Does the spec say that outstanding tasks need to end before this begins?
@@ -327,8 +311,8 @@ else
     taskBarrier->wait();
 }
 
-////temp as migration of barrier
-void task_setup_temp( int gtid, kmp_task_t *task, omp_icv icv,
+//task with depend with use this to setup tasks
+void task_setup_df( int gtid, kmp_task_t *task, omp_icv icv,
                  shared_ptr<atomic<int64_t>> parent_task_counter,
                  parallel_region *team, barrier* taskBarrier)
 {
@@ -443,7 +427,7 @@ void df_task_wrapper( int gtid, kmp_task_t *task, omp_icv icv,
                       parallel_region *team,
                       vector<shared_future<void>> deps, barrier* taskBarrier)
 {
-    task_setup_temp( gtid, task, icv, task_counter, team, taskBarrier);
+    task_setup_df( gtid, task, icv, task_counter, team, taskBarrier);
 }
 
 #ifdef OMP_COMPLIANT
@@ -501,7 +485,7 @@ void hpx_runtime::create_df_task( int gtid, kmp_task_t *thunk,
                                     task->num_child_tasks, team);
         }
 #else
-        new_task = hpx::async(task_setup_temp, gtid, thunk, task->icv,
+        new_task = hpx::async(task_setup_df, gtid, thunk, task->icv,
                                 task->num_child_tasks, team, &task->taskBarrier);
 #endif
     } else {
@@ -664,26 +648,7 @@ void thread_setup( invoke_func kmp_invoke, microtask_t thread_func,
 #endif
 }
     task_data.taskBarrier.wait();
-
-    int count = 0;
-    int max_count = 10;
-    while (*(task_data.num_child_tasks) > 0 ) {
-        std::cerr<<"Warning, running into busy waiting in thread setup"<<endl;
-        if(count == 0) {
-            hpx::this_thread::yield();
-        } else {
-            int sleep_time = 10*count;
-            if(count > max_count)
-                sleep_time = 10*max_count;
-            hpx::this_thread::sleep_for(std::chrono::milliseconds(sleep_time));
-        }
-        count++;
-    }
-    //This keeps the task_data on this stack allocated. When is that needed?
-    //  if tasks are created without a barrier or taskwait, they could still
-    //  reference their parents metadata(task_data above).
-    //This combined with the waiting on child tasks above fufills the requirements
-    //  of an OpenMP barrier.
+    //This keeps the task_data on this stack allocated.
     threadBarrier.wait();
 }
 
@@ -728,24 +693,6 @@ void fork_worker( invoke_func kmp_invoke, microtask_t thread_func,
     //of scope, which will wait on all tasks contained in it. So, nothing needs
     //to be done here for it.
 
-    //I shouldn't need this. Tasks should be done before the thread exit.
-    //FIXME: Remove this once the rest of the cond vars are in.
-#ifndef OMP_COMPLIANT
-    int count = 0;
-    int max_count = 10;
-    while(team.num_tasks > 0) {
-        std::cerr<<"Warning, running into busy waiting in fork worker"<<endl;
-        if(count == 0) {
-            hpx::this_thread::yield();
-        } else {
-            int sleep_time = 10*count;
-            if(count > max_count)
-                sleep_time = 10*max_count;
-            hpx::this_thread::sleep_for(std::chrono::milliseconds(sleep_time));
-        }
-        count++;
-    }
-#endif
 
 #if HPXMP_HAVE_OMPT
     if (ompt_enabled.ompt_callback_parallel_end) {
