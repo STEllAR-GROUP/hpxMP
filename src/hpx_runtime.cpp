@@ -329,10 +329,12 @@ else
 ////temp as migration of barrier
 void task_setup_temp( int gtid, kmp_task_t *task, omp_icv icv,
                  shared_ptr<atomic<int64_t>> parent_task_counter,
-                 parallel_region *team)
+                 parallel_region *team, barrier* taskBarrier)
 {
     auto task_func = task->routine;
     omp_task_data task_data(gtid, team, icv);
+    //this makes tasks wait for the task it created
+    task_data.taskBarrier.count_up();
     set_thread_data( get_self_id(), reinterpret_cast<size_t>(&task_data));
 #if HPXMP_HAVE_OMPT
     ompt_data_t *my_task_data = &hpx_backend->get_task_data()->task_data;
@@ -372,8 +374,12 @@ void task_setup_temp( int gtid, kmp_task_t *task, omp_icv icv,
             my_task_data, status_fin, prior_task_data);
     }
 #endif
+    //this makes tasks wait for the task it created, thus this thread data is not used anymore
+    task_data.taskBarrier.wait();
 //  make sure nothing is accessing this thread data after task_data got destroyed
     set_thread_data( get_self_id(), reinterpret_cast<size_t>(nullptr));
+    //create another thread to wait, let this function return to fullfill when_all requirement in df task function
+    hpx::applier::register_thread_nullary([taskBarrier]() { taskBarrier->wait();});
 }
 
 #ifdef OMP_COMPLIANT
@@ -432,9 +438,9 @@ void hpx_runtime::create_task( kmp_routine_entry_t task_func, int gtid, kmp_task
 void df_task_wrapper( int gtid, kmp_task_t *task, omp_icv icv,
                       shared_ptr<atomic<int64_t>> task_counter,
                       parallel_region *team,
-                      vector<shared_future<void>> deps)
+                      vector<shared_future<void>> deps, barrier* taskBarrier)
 {
-    task_setup_temp( gtid, task, icv, task_counter, team);
+    task_setup_temp( gtid, task, icv, task_counter, team, taskBarrier);
 }
 
 #ifdef OMP_COMPLIANT
@@ -477,6 +483,7 @@ void hpx_runtime::create_df_task( int gtid, kmp_task_t *thunk,
     if(task->in_taskgroup) {
     } else {
         *(task->num_child_tasks) += 1;
+        task->taskBarrier.count_up();
     }
 #ifndef OMP_COMPLIANT
     team->num_tasks++;
@@ -491,8 +498,8 @@ void hpx_runtime::create_df_task( int gtid, kmp_task_t *thunk,
                                     task->num_child_tasks, team);
         }
 #else
-        new_task = hpx::async( task_setup_temp, gtid, thunk, task->icv,
-                                task->num_child_tasks, team);
+        new_task = hpx::async(task_setup_temp, gtid, thunk, task->icv,
+                                task->num_child_tasks, team, &task->taskBarrier);
 #endif
     } else {
 
@@ -514,7 +521,7 @@ void hpx_runtime::create_df_task( int gtid, kmp_task_t *thunk,
 #else
         new_task = dataflow( unwrapping(df_task_wrapper), gtid, thunk, task->icv,
                              task->num_child_tasks,
-                             team, hpx::when_all(dep_futures) );
+                             team, hpx::when_all(dep_futures), &task->taskBarrier);
 #endif
     }
     for(int i = 0 ; i < ndeps; i++) {
