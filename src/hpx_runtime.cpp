@@ -457,9 +457,6 @@ void hpx_runtime::create_df_task( int gtid, kmp_task_t *thunk,
 {
     auto task = get_task_data();
     auto team = task->team;
-    if(team->num_threads == 1 ) {
-        create_task(thunk->routine, gtid, thunk);
-    }
     vector<shared_future<void>> dep_futures;
     dep_futures.reserve( ndeps + ndeps_noalias);
 

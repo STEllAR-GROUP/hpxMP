@@ -31,7 +31,6 @@ set(tests
         #single_copyprivate_2   #failure sometime
         #single_copyprivate_1var    #failure sometime
         single_nowait
-        task_depend
         taskgroup #to be implemented, not checking correctness
         task_fp
         task_tree
@@ -42,6 +41,7 @@ set(tests
 
 set(tests_enhanced
         app_omp_fib
+        task_depend
     )
 
 enable_testing()
