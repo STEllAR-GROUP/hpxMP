@@ -37,9 +37,6 @@ int main(int argc, char **argv)
                 z = bar(y);
             }
         }
-        printf("x = %d\n", x);
-        printf("y = %d\n", y);
-        printf("z = %d\n", z);
         if (x != 42 || y != 53 || z != 64)
             return 1;
     }

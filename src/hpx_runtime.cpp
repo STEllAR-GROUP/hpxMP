@@ -31,15 +31,15 @@ extern boost::shared_ptr<hpx_runtime> hpx_backend;
 
 void wait_for_startup(std::mutex& startup_mtx, std::condition_variable& cond, bool& running)
 {
-#if defined DEBUG
-    cout << "HPX OpenMP runtime has started" << endl;
-#endif
     {   // Let the main thread know that we're done.
         //std::scoped_lock lk(startup_mtx);
         std::lock_guard<std::mutex> lk(startup_mtx);
         running = true;
         cond.notify_all();
     }
+#if defined DEBUG
+    std::cerr << "HPX OpenMP runtime has started" << endl;
+#endif
 }
 
 void fini_runtime()
@@ -379,7 +379,9 @@ void task_setup_temp( int gtid, kmp_task_t *task, omp_icv icv,
 //  make sure nothing is accessing this thread data after task_data got destroyed
     set_thread_data( get_self_id(), reinterpret_cast<size_t>(nullptr));
     //create another thread to wait, let this function return to fullfill when_all requirement in df task function
-    hpx::applier::register_thread_nullary([taskBarrier]() { taskBarrier->wait();});
+    hpx::applier::register_thread_nullary(
+        [taskBarrier]() { taskBarrier->wait(); }, "df_task_wait",
+        hpx::threads::pending, true, hpx::threads::thread_priority_normal);
 }
 
 #ifdef OMP_COMPLIANT
