@@ -14,12 +14,12 @@ long fib1(int k);
 long fib2(int k);
 
 //int num_tasks = 0;
-int cutoff = 26;
+int cutoff = 15;
 
 int main(int argc, char* argv[])
 {
-    for(int i=0; i<=20; i++) {
-        omp_set_num_threads(i%2);
+    for(int i=2; i<=20; i++) {
+        omp_set_num_threads(i/2);
         struct timeval t1;
         struct timeval t2;
 
@@ -31,7 +31,6 @@ int main(int argc, char* argv[])
         if (argc != 2 && argc != 3) {
             //fprintf(stderr, "Usage: ./fib <input> <cutoff>\n");
             input = 24;
-            cutoff = 0;
             //return 1;
         } else {
             input = atoi(argv[1]);

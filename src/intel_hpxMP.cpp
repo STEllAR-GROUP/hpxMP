@@ -221,8 +221,9 @@ void __kmpc_taskgroup( ident_t* loc, int gtid ) {
             }
         }
 #endif
-        cout << "Warning, taskgroup failed to start" << endl;
     }
+    else
+        cout << "Warning, taskgroup failed to start" << endl;
     //hpx_backend->get_task_data()->num_taskgroup_tasks.reset(new atomic<int>{0});
 }
 

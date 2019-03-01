@@ -31,7 +31,6 @@ set(tests
         #single_copyprivate_2   #failure sometime
         #single_copyprivate_1var    #failure sometime
         single_nowait
-        task_depend
         taskgroup #to be implemented, not checking correctness
         task_fp
         task_tree
@@ -42,6 +41,7 @@ set(tests
 
 set(tests_enhanced
         app_omp_fib
+        task_depend
     )
 
 enable_testing()
@@ -69,8 +69,8 @@ macro(do_test_enhanced name)
             )
     #maybe make the omp_num_threads configurable later
     set_tests_properties(${name} PROPERTIES
-            ENVIRONMENT "LD_PRELOAD=${PROJECT_BINARY_DIR}/libhpxmp.so"
-            TIMEOUT 300
+            ENVIRONMENT "LD_PRELOAD=${PROJECT_BINARY_DIR}/libhpxmp.so;OMP_NUM_THREADS=2"
+            TIMEOUT 60
             )
 endmacro(do_test_enhanced)
 

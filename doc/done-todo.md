@@ -84,5 +84,12 @@ A list of callbacks to be supported can be found [here](ompt-priorities.txt).
 
 **Note**: Currently Mandatory Events are under control, but they needs to be 
 reviewed and improved. Currently, OMPT does not work with gcc.
-Other events are not implemented yet. 
+Other events are not implemented yet.
+
+#02/25/2019
+Taskwait is treated as taskgroup for now. taskgroup is not replaced with barrier yet.
+Note the difference between taskwait and taskgroup.
+With taskwait, the current task waits only for its child tasks.
+With taskgroup, the current task waits not only for the child tasks generated in the taskgroup
+but also for all the descendants of those child tasks.
 

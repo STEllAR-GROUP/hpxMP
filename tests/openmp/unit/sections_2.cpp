@@ -12,18 +12,12 @@ int main()
 {
     std::atomic<int> position(-1);
     int result[4];
-
+    int ret = 0;
     position++;
     result[position] = 1;
     printf("The ");
 #pragma omp parallel sections
     {
-#pragma omp section
-            {
-                position++;
-                result[position] = 2;
-                printf("STE||AR ");
-            }
 #pragma omp section
             {
                 position++;
@@ -36,9 +30,10 @@ int main()
     printf("is awesome\n ");
 
     printf("\n");
-    for(int i = 0; i < 3; i++){
+    for(int i = 0; i < 2; i++){
+        printf("%d ",result[i]);
         if(result[i] > result[i+1])
-            return 1;
+            ret = 1;
     }
-    return 0;
+    return ret;
 }

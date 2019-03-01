@@ -5,6 +5,7 @@
 //  file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
 #include <stdio.h>
+#include <omp.h>
 
 int foo()
 {
@@ -20,24 +21,24 @@ int main(int argc, char **argv)
 {
     int x = 5, y = 1, z = 0;
     printf("&x = %p\n", &x);
+    for(int i=2; i<=20; i++) {
+        omp_set_num_threads(i/2);
 #pragma omp parallel
-    {
-#pragma omp single
         {
+#pragma omp single
+            {
 #pragma omp task depend(out : x)
-            x = foo();
+                x = foo();
 
 #pragma omp task depend(in : x) depend(out : y)
-            y = bar(x);
+                y = bar(x);
 
 #pragma omp task depend(in : y)
-            z = bar(y);
+                z = bar(y);
+            }
         }
+        if (x != 42 || y != 53 || z != 64)
+            return 1;
     }
-    printf("x = %d\n", x);
-    printf("y = %d\n", y);
-    printf("z = %d\n", z);
-    if (x != 42 || y != 53 || z != 64)
-        return 1;
     return 0;
 }
