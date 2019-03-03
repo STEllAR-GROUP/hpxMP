@@ -41,6 +41,7 @@ using std::atomic;
 using boost::shared_ptr;
 using hpx::threads::executors::local_priority_queue_executor;
 using hpx::lcos::local::barrier;
+using hpx::lcos::local::latch;
 using hpx::lcos::shared_future;
 using hpx::lcos::future;
 using std::vector;
@@ -129,7 +130,7 @@ class loop_data {
 struct parallel_region {
 
     parallel_region( int N ) : num_threads(N), globalBarrier(N),
-                               depth(0), reduce_data(N)
+                               depth(0), reduce_data(N), teamTaskLatch(0)
     {};
 
     parallel_region( parallel_region *parent, int threads_requested ) : parallel_region(threads_requested)
@@ -154,6 +155,7 @@ struct parallel_region {
     vector<void*> reduce_data;
     vector<loop_data> loop_list;
     mutex_type loop_mtx;
+    latch teamTaskLatch;
 #if (HPXMP_HAVE_OMPT)
     ompt_data_t parent_data = ompt_data_none;
     ompt_data_t parallel_data = ompt_data_none;
@@ -171,7 +173,7 @@ class omp_task_data {
     public:
         //This constructor should only be used once for the implicit task
         omp_task_data( parallel_region *T, omp_device_icv *global, int init_num_threads)
-            : team(T), num_child_tasks(new atomic<int64_t>{0}),taskBarrier(0)
+            : team(T), num_child_tasks(new atomic<int64_t>{0}),taskBarrier(0),taskLatch(0)
               {
             local_thread_num = 0;
             icv.device = global;
@@ -191,7 +193,7 @@ class omp_task_data {
 
         //This is for explicit tasks
         omp_task_data(int tid, parallel_region *T, omp_icv icv_vars)
-            : local_thread_num(tid), team(T), num_child_tasks(new atomic<int64_t>{0}), icv(icv_vars),taskBarrier(0)
+            : local_thread_num(tid), team(T), num_child_tasks(new atomic<int64_t>{0}), icv(icv_vars),taskBarrier(0),taskLatch(0)
         {
             threads_requested = icv.nthreads;
             icv_vars.device = icv.device;
@@ -223,6 +225,7 @@ class omp_task_data {
         int loop_num{0};
         bool in_taskgroup{false};
         barrier taskBarrier;
+        latch taskLatch;
         //shared_future<void> last_df_task;
 #if HPXMP_HAVE_OMPT
         ompt_data_t task_data = ompt_data_none;

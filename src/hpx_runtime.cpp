@@ -291,6 +291,7 @@ else
     *(parent_task_counter) -= 1;
 #ifndef OMP_COMPLIANT
     team->num_tasks--;
+    team->teamTaskLatch.count_down(1);
 #endif
     if(task->part_id ==0)
         delete[] (char*)task;
@@ -314,12 +315,13 @@ else
 //task with depend with use this to setup tasks
 void task_setup_df( int gtid, kmp_task_t *task, omp_icv icv,
                  shared_ptr<atomic<int64_t>> parent_task_counter,
-                 parallel_region *team, barrier* taskBarrier)
+                 parallel_region *team, latch* taskLatch)
 {
     auto task_func = task->routine;
     omp_task_data task_data(gtid, team, icv);
     //this makes tasks wait for the task it created
     task_data.taskBarrier.count_up();
+    task_data.taskLatch.count_up(1);
     set_thread_data( get_self_id(), reinterpret_cast<size_t>(&task_data));
 #if HPXMP_HAVE_OMPT
     ompt_data_t *my_task_data = &hpx_backend->get_task_data()->task_data;
@@ -347,6 +349,7 @@ void task_setup_df( int gtid, kmp_task_t *task, omp_icv icv,
     *(parent_task_counter) -= 1;
 #ifndef OMP_COMPLIANT
     team->num_tasks--;
+    team->teamTaskLatch.count_down(1);
 #endif
     if(task->part_id ==0)
         delete[] (char*)task;
@@ -359,14 +362,13 @@ void task_setup_df( int gtid, kmp_task_t *task, omp_icv icv,
             my_task_data, status_fin, prior_task_data);
     }
 #endif
-    //this makes tasks wait for the task it created, thus this thread data is not used anymore
+    //this two line makes tasks wait for the task it created, thus this thread data is not used anymore
     task_data.taskBarrier.wait();
+    task_data.taskLatch.count_down_and_wait();
 //  make sure nothing is accessing this thread data after task_data got destroyed
     set_thread_data( get_self_id(), reinterpret_cast<size_t>(nullptr));
-    //create another thread to wait, let this function return to fullfill when_all requirement in df task function
-    hpx::applier::register_thread_nullary(
-        [taskBarrier]() { taskBarrier->wait(); }, "df_task_wait",
-        hpx::threads::pending, true, hpx::threads::thread_priority_normal);
+    // no wait, return thus the when_all in task_create_df can continue
+    taskLatch->count_down(1);
 }
 
 #ifdef OMP_COMPLIANT
@@ -408,6 +410,7 @@ void hpx_runtime::create_task( kmp_routine_entry_t task_func, int gtid, kmp_task
         //this is waited in thread_setup, create_task is not supposed to wait anything
         current_task->taskBarrier.count_up();
         current_task->team->num_tasks++;
+        current_task->team->teamTaskLatch.count_up(1);
         //this fixes hpx::apply changes in hpx backend
         hpx::applier::register_thread_nullary(
             std::bind(&task_setup, gtid, thunk, current_task->icv,
@@ -425,9 +428,9 @@ void hpx_runtime::create_task( kmp_routine_entry_t task_func, int gtid, kmp_task
 void df_task_wrapper( int gtid, kmp_task_t *task, omp_icv icv,
                       shared_ptr<atomic<int64_t>> task_counter,
                       parallel_region *team,
-                      vector<shared_future<void>> deps, barrier* taskBarrier)
+                      vector<shared_future<void>> deps, latch* taskLatch)
 {
-    task_setup_df( gtid, task, icv, task_counter, team, taskBarrier);
+    task_setup_df( gtid, task, icv, task_counter, team, taskLatch);
 }
 
 #ifdef OMP_COMPLIANT
@@ -470,10 +473,11 @@ void hpx_runtime::create_df_task( int gtid, kmp_task_t *thunk,
     if(task->in_taskgroup) {
     } else {
         *(task->num_child_tasks) += 1;
-        task->taskBarrier.count_up();
+        task->taskLatch.count_up(1);
     }
 #ifndef OMP_COMPLIANT
     team->num_tasks++;
+    team->teamTaskLatch.count_up(1);
 #endif
     if(dep_futures.size() == 0) {
 #ifdef OMP_COMPLIANT
@@ -486,7 +490,7 @@ void hpx_runtime::create_df_task( int gtid, kmp_task_t *thunk,
         }
 #else
         new_task = hpx::async(task_setup_df, gtid, thunk, task->icv,
-                                task->num_child_tasks, team, &task->taskBarrier);
+                                task->num_child_tasks, team, &task->taskLatch);
 #endif
     } else {
 
@@ -508,7 +512,7 @@ void hpx_runtime::create_df_task( int gtid, kmp_task_t *thunk,
 #else
         new_task = dataflow( unwrapping(df_task_wrapper), gtid, thunk, task->icv,
                              task->num_child_tasks,
-                             team, hpx::when_all(dep_futures), &task->taskBarrier);
+                             team, hpx::when_all(dep_futures), &task->taskLatch);
 #endif
     }
     for(int i = 0 ; i < ndeps; i++) {
@@ -647,8 +651,10 @@ void thread_setup( invoke_func kmp_invoke, microtask_t thread_func,
     }
 #endif
 }
+    // wait for the task this thread created to finish
     task_data.taskBarrier.wait();
-    //This keeps the task_data on this stack allocated.
+    //This together keeps the task_data on this stack allocated
+    team->teamTaskLatch.count_down(1);
     threadBarrier.wait();
 }
 
@@ -678,6 +684,7 @@ void fork_worker( invoke_func kmp_invoke, microtask_t thread_func,
 #endif
     int running_threads = parent->threads_requested;
     barrier threadBarrier(running_threads+1);
+    team.teamTaskLatch.count_up(running_threads+1);
 
     for( int i = 0; i < parent->threads_requested; i++ ) {
         hpx::applier::register_thread_nullary(
@@ -687,6 +694,8 @@ void fork_worker( invoke_func kmp_invoke, microtask_t thread_func,
                 true, hpx::threads::thread_priority_low, i );
                 //true, hpx::threads::thread_priority_normal, i );
     }
+    // wait for all the tasks in the team to finish
+    team.teamTaskLatch.count_down_and_wait();
     threadBarrier.wait();
 
     //The executor containing the tasks will be destroyed as this call goes out
