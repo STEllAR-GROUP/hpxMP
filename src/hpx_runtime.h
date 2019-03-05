@@ -234,7 +234,7 @@ class omp_task_data {
 #ifdef OMP_COMPLIANT
         shared_ptr<local_priority_queue_executor> tg_exec;
 #else
-        shared_ptr<atomic<int64_t>> tg_num_tasks;
+        shared_ptr<latch> taskgroupLatch;
 #endif
 
         omp_icv icv;

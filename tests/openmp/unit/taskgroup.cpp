@@ -40,15 +40,27 @@ int main(int argc, char *argv[]) {
                     }
                 }
             }
-            printf("is fun to watch ");
+            printf(" fun to watch ");
             position++;
             result[position] = 3;
+#pragma omp taskgroup
+            {
+#pragma omp task
+                {
+                    printf(", good ");
+                    position++;
+                    result[position] = 4;
+                }
+            }
+            printf("job ! ");
+            position++;
+            result[position] = 5;
         }
     } // End of parallel region
     printf("\n");
-    for(int i = 0; i < 3; i++){
+    for(int i = 0; i < 5; i++){
         if(result[i] > result[i+1])
-            return 0;
+            return 1;
     }
     return 0;
 }

@@ -228,7 +228,7 @@ bool hpx_runtime::start_taskgroup()
     //task->tg_exec.reset(new local_priority_queue_executor(task->local_thread_num));
     task->tg_exec.reset(new local_priority_queue_executor(task->team->num_threads));
 #else
-    task->tg_num_tasks.reset(new atomic<int64_t>{0});
+    task->taskgroupLatch.reset(new latch(1));
 #endif
     return true;
 }
@@ -239,12 +239,8 @@ void hpx_runtime::end_taskgroup()
 #ifdef OMP_COMPLIANT
     task->tg_exec.reset();
 #else
-    while( *(task->tg_num_tasks) > 0 ) {
-        std::cerr<<"Warning, running into busy waiting in end_taskgroup"<<std::endl;
-        //hpx::this_thread::sleep_for(std::chrono::milliseconds(100));
-        hpx::this_thread::yield();
-    }
-    task->tg_num_tasks.reset();
+    task->taskgroupLatch->count_down_and_wait();
+    task->taskgroupLatch.reset();
 #endif
     task->in_taskgroup = false;
 }
@@ -258,7 +254,7 @@ void hpx_runtime::task_wait()
 
 void task_setup( int gtid, kmp_task_t *task, omp_icv icv,
                  shared_ptr<atomic<int64_t>> parent_task_counter,
-                 parallel_region *team, barrier* taskBarrier)
+                 parallel_region *team, barrier* taskBarrier, shared_ptr<latch> taskgroupLatch)
 {
     auto task_func = task->routine;
     omp_task_data task_data(gtid, team, icv);
@@ -308,6 +304,9 @@ else
     task_data.taskBarrier.wait();
 //  make sure nothing is accessing this thread data after task_data got destroyed
     set_thread_data( get_self_id(), reinterpret_cast<size_t>(nullptr));
+    //if task is in taskgroup, count down taskgroup latch as this task is done
+    if(taskgroupLatch)
+        taskgroupLatch->count_down(1);
     //all child tasks has finished if reaching this point, tell parent me and my child tasks are done
     taskBarrier->wait();
 }
@@ -405,16 +404,18 @@ void hpx_runtime::create_task( kmp_routine_entry_t task_func, int gtid, kmp_task
                         current_task->num_child_tasks, current_task->team );
         }
 #else
-        //TODO: add taskgroups in non compliant version
         *(current_task->num_child_tasks) += 1;
         //this is waited in thread_setup, create_task is not supposed to wait anything
         current_task->taskBarrier.count_up();
         current_task->team->num_tasks++;
         current_task->team->teamTaskLatch.count_up(1);
+        if(current_task->in_taskgroup)
+            current_task->taskgroupLatch->count_up(1);
         //this fixes hpx::apply changes in hpx backend
         hpx::applier::register_thread_nullary(
             std::bind(&task_setup, gtid, thunk, current_task->icv,
-                current_task->num_child_tasks, current_task->team, &current_task->taskBarrier),
+                current_task->num_child_tasks, current_task->team, &current_task->taskBarrier,
+                current_task->taskgroupLatch),
             "omp_explicit_task", hpx::threads::pending, true,
             hpx::threads::thread_priority_normal);
 #endif
