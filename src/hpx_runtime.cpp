@@ -255,10 +255,10 @@ void hpx_runtime::task_wait()
 void task_setup( int gtid, kmp_task_t *task, omp_task_data* parent_task)
 {
     auto task_func = task->routine;
-    omp_task_data current_task_data(gtid, parent_task->team, parent_task->icv);
+    omp_task_data current_task(gtid, parent_task->team, parent_task->icv);
     //this makes tasks wait for the task it created, aka task created tasks
-    current_task_data.taskBarrier.count_up();
-    set_thread_data( get_self_id(), reinterpret_cast<size_t>(&current_task_data));
+    current_task.taskBarrier.count_up();
+    set_thread_data( get_self_id(), reinterpret_cast<size_t>(&current_task));
 #if HPXMP_HAVE_OMPT
     ompt_data_t *my_task_data = &hpx_backend->get_task_data()->task_data;
     if (ompt_enabled.ompt_callback_task_create)
@@ -283,7 +283,7 @@ else
     ((void (*)(void *))(*(task->routine)))(task->shareds);
 #ifndef OMP_COMPLIANT
     //count down number of tasks under team
-    current_task_data.team->teamTaskLatch.count_down(1);
+    current_task.team->teamTaskLatch.count_down(1);
 #endif
     if(task->part_id ==0)
         delete[] (char*)task;
@@ -297,7 +297,7 @@ else
     }
 #endif
     //this makes tasks wait for the task it created, thus this thread data is not used anymore
-    current_task_data.taskBarrier.wait();
+    current_task.taskBarrier.wait();
     //make sure nothing is accessing this thread data after task_data got destroyed
     set_thread_data( get_self_id(), reinterpret_cast<size_t>(nullptr));
     //if task is in taskgroup, count down taskgroup latch as this task is done
@@ -311,11 +311,11 @@ else
 void task_setup_df( int gtid, kmp_task_t *task, omp_task_data* parent_task)
 {
     auto task_func = task->routine;
-    omp_task_data current_task_data(gtid, parent_task->team, parent_task->icv);
+    omp_task_data current_task(gtid, parent_task->team, parent_task->icv);
     //this makes tasks wait for the task it created
-    current_task_data.taskBarrier.count_up();
-    current_task_data.taskLatch.count_up(1);
-    set_thread_data( get_self_id(), reinterpret_cast<size_t>(&current_task_data));
+    current_task.taskBarrier.count_up();
+    current_task.taskLatch.count_up(1);
+    set_thread_data( get_self_id(), reinterpret_cast<size_t>(&current_task));
 #if HPXMP_HAVE_OMPT
     ompt_data_t *my_task_data = &hpx_backend->get_task_data()->task_data;
     if (ompt_enabled.ompt_callback_task_create)
@@ -340,7 +340,7 @@ void task_setup_df( int gtid, kmp_task_t *task, omp_task_data* parent_task)
         ((void (*)(void *))(*(task->routine)))(task->shareds);
 
 #ifndef OMP_COMPLIANT
-    current_task_data.team->teamTaskLatch.count_down(1);
+    current_task.team->teamTaskLatch.count_down(1);
 #endif
     if(task->part_id ==0)
         delete[] (char*)task;
@@ -355,8 +355,8 @@ void task_setup_df( int gtid, kmp_task_t *task, omp_task_data* parent_task)
 #endif
     //this two line makes tasks wait for the task it created, thus this thread data is not used anymore
     //the perpose is to keep this thread data allocated and not goes out of scope when its child are still using it
-    current_task_data.taskBarrier.wait();
-    current_task_data.taskLatch.count_down_and_wait();
+    current_task.taskBarrier.wait();
+    current_task.taskLatch.count_down_and_wait();
     //make sure nothing is accessing this thread data after task_data got destroyed
     set_thread_data( get_self_id(), reinterpret_cast<size_t>(nullptr));
     if(parent_task->in_taskgroup)
@@ -420,7 +420,8 @@ void hpx_runtime::create_task( kmp_routine_entry_t task_func, int gtid, kmp_task
 //    }
 }
 
-void df_task_wrapper( int gtid, kmp_task_t *task, omp_task_data* parent_task)
+//deps will notify when_all function
+void df_task_wrapper( int gtid, kmp_task_t *task, omp_task_data* parent_task, vector<shared_future<void>> deps)
 {
     task_setup_df( gtid, task, parent_task);
 }
@@ -500,7 +501,7 @@ void hpx_runtime::create_df_task( int gtid, kmp_task_t *thunk,
                                  team, hpx::when_all(dep_futures) );
         }
 #else
-        new_task = dataflow( unwrapping(df_task_wrapper), gtid, thunk, current_task);
+        new_task = dataflow( unwrapping(df_task_wrapper), gtid, thunk, current_task, hpx::when_all(dep_futures));
 #endif
     }
     for(int i = 0 ; i < ndeps; i++) {
