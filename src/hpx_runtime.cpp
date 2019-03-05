@@ -308,15 +308,14 @@ else
 }
 
 //task with depend with use this to setup tasks
-void task_setup_df( int gtid, kmp_task_t *task, omp_icv icv,
-                 parallel_region *team, latch* taskLatch)
+void task_setup_df( int gtid, kmp_task_t *task, omp_task_data* parent_task)
 {
     auto task_func = task->routine;
-    omp_task_data task_data(gtid, team, icv);
+    omp_task_data current_task_data(gtid, parent_task->team, parent_task->icv);
     //this makes tasks wait for the task it created
-    task_data.taskBarrier.count_up();
-    task_data.taskLatch.count_up(1);
-    set_thread_data( get_self_id(), reinterpret_cast<size_t>(&task_data));
+    current_task_data.taskBarrier.count_up();
+    current_task_data.taskLatch.count_up(1);
+    set_thread_data( get_self_id(), reinterpret_cast<size_t>(&current_task_data));
 #if HPXMP_HAVE_OMPT
     ompt_data_t *my_task_data = &hpx_backend->get_task_data()->task_data;
     if (ompt_enabled.ompt_callback_task_create)
@@ -341,7 +340,7 @@ void task_setup_df( int gtid, kmp_task_t *task, omp_icv icv,
         ((void (*)(void *))(*(task->routine)))(task->shareds);
 
 #ifndef OMP_COMPLIANT
-    team->teamTaskLatch.count_down(1);
+    current_task_data.team->teamTaskLatch.count_down(1);
 #endif
     if(task->part_id ==0)
         delete[] (char*)task;
@@ -355,12 +354,15 @@ void task_setup_df( int gtid, kmp_task_t *task, omp_icv icv,
     }
 #endif
     //this two line makes tasks wait for the task it created, thus this thread data is not used anymore
-    task_data.taskBarrier.wait();
-    task_data.taskLatch.count_down_and_wait();
-//  make sure nothing is accessing this thread data after task_data got destroyed
+    //the perpose is to keep this thread data allocated and not goes out of scope when its child are still using it
+    current_task_data.taskBarrier.wait();
+    current_task_data.taskLatch.count_down_and_wait();
+    //make sure nothing is accessing this thread data after task_data got destroyed
     set_thread_data( get_self_id(), reinterpret_cast<size_t>(nullptr));
+    if(parent_task->in_taskgroup)
+        parent_task->taskgroupLatch->count_down(1);
     // no wait, return thus the when_all in task_create_df can continue
-    taskLatch->count_down(1);
+    parent_task->taskLatch.count_down(1);
 }
 
 #ifdef OMP_COMPLIANT
@@ -418,11 +420,9 @@ void hpx_runtime::create_task( kmp_routine_entry_t task_func, int gtid, kmp_task
 //    }
 }
 
-void df_task_wrapper( int gtid, kmp_task_t *task, omp_icv icv,
-                      parallel_region *team,
-                      vector<shared_future<void>> deps, latch* taskLatch)
+void df_task_wrapper( int gtid, kmp_task_t *task, omp_task_data* parent_task)
 {
-    task_setup_df( gtid, task, icv, team, taskLatch);
+    task_setup_df( gtid, task, parent_task);
 }
 
 #ifdef OMP_COMPLIANT
@@ -443,28 +443,29 @@ void hpx_runtime::create_df_task( int gtid, kmp_task_t *thunk,
                            int ndeps, kmp_depend_info_t *dep_list,
                            int ndeps_noalias, kmp_depend_info_t *noalias_dep_list )
 {
-    auto task = get_task_data();
-    auto team = task->team;
+    auto current_task = get_task_data();
+    auto team = current_task->team;
     vector<shared_future<void>> dep_futures;
     dep_futures.reserve( ndeps + ndeps_noalias);
 
     //Populating a vector of futures that the task depends on
     for(int i = 0; i < ndeps;i++) {
-        if(task->df_map.count( dep_list[i].base_addr) > 0) {
-            dep_futures.push_back(task->df_map[dep_list[i].base_addr]);
+        if(current_task->df_map.count( dep_list[i].base_addr) > 0) {
+            dep_futures.push_back(current_task->df_map[dep_list[i].base_addr]);
         }
     }
     for(int i = 0; i < ndeps_noalias;i++) {
-        if(task->df_map.count( noalias_dep_list[i].base_addr) > 0) {
-            dep_futures.push_back(task->df_map[noalias_dep_list[i].base_addr]);
+        if(current_task->df_map.count( noalias_dep_list[i].base_addr) > 0) {
+            dep_futures.push_back(current_task->df_map[noalias_dep_list[i].base_addr]);
         }
     }
 
     shared_future<void> new_task;
 
-    if(task->in_taskgroup) {
+    if(current_task->in_taskgroup) {
+        current_task->taskgroupLatch->count_up(1);
     } else {
-        task->taskLatch.count_up(1);
+        current_task->taskLatch.count_up(1);
     }
 #ifndef OMP_COMPLIANT
     team->teamTaskLatch.count_up(1);
@@ -479,8 +480,7 @@ void hpx_runtime::create_df_task( int gtid, kmp_task_t *thunk,
                                     task->num_child_tasks, team);
         }
 #else
-        new_task = hpx::async(task_setup_df, gtid, thunk, task->icv,
-                team, &task->taskLatch);
+        new_task = hpx::async(task_setup_df, gtid, thunk, current_task);
 #endif
     } else {
 
@@ -500,18 +500,17 @@ void hpx_runtime::create_df_task( int gtid, kmp_task_t *thunk,
                                  team, hpx::when_all(dep_futures) );
         }
 #else
-        new_task = dataflow( unwrapping(df_task_wrapper), gtid, thunk, task->icv,
-                             team, hpx::when_all(dep_futures), &task->taskLatch);
+        new_task = dataflow( unwrapping(df_task_wrapper), gtid, thunk, current_task);
 #endif
     }
     for(int i = 0 ; i < ndeps; i++) {
         if(dep_list[i].flags.out) {
-            task->df_map[dep_list[i].base_addr] = new_task;
+            current_task->df_map[dep_list[i].base_addr] = new_task;
         }
     }
     for(int i = 0 ; i < ndeps_noalias; i++) {
         if(noalias_dep_list[i].flags.out) {
-            task->df_map[noalias_dep_list[i].base_addr] = new_task;
+            current_task->df_map[noalias_dep_list[i].base_addr] = new_task;
         }
     }
     //task->last_df_task = new_task;
