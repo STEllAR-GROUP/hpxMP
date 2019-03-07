@@ -248,17 +248,17 @@ void hpx_runtime::end_taskgroup()
 void hpx_runtime::task_wait()
 {
     auto *task = get_task_data();
-    task->taskBarrier.wait();
-    task->taskBarrier.reset(1);
+    intrusive_ptr task_ptr(task);
+    task_ptr->taskBarrier.count_up();
+    task_ptr->taskBarrier.wait();
+    task_ptr->taskBarrier.reset(0);
 }
 
-void task_setup( int gtid, kmp_task_t *task, omp_task_data* parent_task)
+void task_setup( int gtid, kmp_task_t *task, intrusive_ptr<omp_task_data> parent_task)
 {
     auto task_func = task->routine;
-    omp_task_data current_task(gtid, parent_task->team, parent_task->icv);
-    //this makes tasks wait for the task it created, aka task created tasks
-    current_task.taskBarrier.count_up();
-    set_thread_data( get_self_id(), reinterpret_cast<size_t>(&current_task));
+    intrusive_ptr current_task_ptr(new omp_task_data(gtid, parent_task->team, parent_task->icv));
+    set_thread_data( get_self_id(), reinterpret_cast<size_t>(current_task_ptr.get()));
 #if HPXMP_HAVE_OMPT
     ompt_data_t *my_task_data = &hpx_backend->get_task_data()->task_data;
     if (ompt_enabled.ompt_callback_task_create)
@@ -283,7 +283,7 @@ else
     ((void (*)(void *))(*(task->routine)))(task->shareds);
 #ifndef OMP_COMPLIANT
     //count down number of tasks under team
-    current_task.team->teamTaskLatch.count_down(1);
+    current_task_ptr->team->teamTaskLatch.count_down(1);
 #endif
     if(task->part_id ==0)
         delete[] (char*)task;
@@ -296,10 +296,6 @@ else
             my_task_data, status_fin, prior_task_data);
     }
 #endif
-    //this makes tasks wait for the task it created, thus this thread data is not used anymore
-    current_task.taskBarrier.wait();
-    //make sure nothing is accessing this thread data after task_data got destroyed
-    set_thread_data( get_self_id(), reinterpret_cast<size_t>(nullptr));
     //if task is in taskgroup, count down taskgroup latch as this task is done
     if(parent_task->in_taskgroup)
         parent_task->taskgroupLatch->count_down(1);
@@ -387,8 +383,8 @@ void tg_task_setup( int gtid, kmp_task_t *task, omp_icv icv,
 void hpx_runtime::create_task( kmp_routine_entry_t task_func, int gtid, kmp_task_t *thunk)
 {
     auto *current_task = get_task_data();
-
-    if(current_task->team->num_threads > 0) {
+    intrusive_ptr current_task_ptr(current_task);
+    if(current_task_ptr->team->num_threads > 0) {
 #ifdef OMP_COMPLIANT
         if(current_task->in_taskgroup) {
             hpx::apply( *(current_task->tg_exec), tg_task_setup, gtid, thunk, current_task->icv,
@@ -401,15 +397,15 @@ void hpx_runtime::create_task( kmp_routine_entry_t task_func, int gtid, kmp_task
 #else
         //this is waited in thread_setup, wait for all task this thread created to be done
         // create_task function is not supposed to wait anything
-        current_task->taskBarrier.count_up();
+        current_task_ptr->taskBarrier.count_up();
         //count up number of tasks in this team
-        current_task->team->teamTaskLatch.count_up(1);
+        current_task_ptr->team->teamTaskLatch.count_up(1);
         //count up number of task in taskgroup if we are under taskgroup construct
-        if(current_task->in_taskgroup)
-            current_task->taskgroupLatch->count_up(1);
+        if(current_task_ptr->in_taskgroup)
+            current_task_ptr->taskgroupLatch->count_up(1);
         //this fixes hpx::apply changes in hpx backend
         hpx::applier::register_thread_nullary(
-            std::bind(&task_setup, gtid, thunk, current_task),
+            std::bind(&task_setup, gtid, thunk, current_task_ptr),
             "omp_explicit_task", hpx::threads::pending, true,
             hpx::threads::thread_priority_normal);
 #endif
@@ -603,8 +599,6 @@ void thread_setup( invoke_func kmp_invoke, microtask_t thread_func,
                    barrier& threadBarrier)
 {
     intrusive_ptr task_data_ptr(new omp_task_data(tid, team, parent));
-    //count up taskBarrier before set to the thread data
-    task_data_ptr->taskBarrier.count_up();
 
     set_thread_data( get_self_id(), reinterpret_cast<size_t>(task_data_ptr.get()));
 
@@ -640,8 +634,6 @@ void thread_setup( invoke_func kmp_invoke, microtask_t thread_func,
     }
 #endif
 }
-    // wait for the task this thread created to finish
-    task_data_ptr->taskBarrier.wait();
     //This together keeps the task_data on this stack allocated
     team->teamTaskLatch.count_down(1);
     //can not be replaced with latch as nobody is waiting for the last depend task and task_data is destroyed too early
