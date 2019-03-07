@@ -27,6 +27,7 @@
 #include <boost/lexical_cast.hpp>
 #include <boost/assign/std/vector.hpp>
 #include <boost/cstdint.hpp>
+#include <boost/intrusive_ptr.hpp>
 //#include <boost/thread/mutex.hpp>
 //#include <boost/thread/condition.hpp>
 
@@ -46,6 +47,7 @@ using hpx::lcos::shared_future;
 using hpx::lcos::future;
 using std::vector;
 using hpx::util::high_resolution_timer;
+using boost::intrusive_ptr;
 
 
 typedef void (*microtask_t)( int *gtid, int *npr, ... );
@@ -224,6 +226,7 @@ class omp_task_data {
         bool in_taskgroup{false};
         barrier taskBarrier;
         latch taskLatch;
+        atomic<int> pointer_counter{0};
         //shared_future<void> last_df_task;
 #if HPXMP_HAVE_OMPT
         ompt_data_t task_data = ompt_data_none;
@@ -238,6 +241,17 @@ class omp_task_data {
         omp_icv icv;
         depends_map df_map;
 };
+
+inline void intrusive_ptr_add_ref(omp_task_data *x)
+{
+    ++x->pointer_counter;
+}
+
+inline void intrusive_ptr_release(omp_task_data *x)
+{
+    if (--x->pointer_counter == 0)
+        delete x;
+}
 
 struct raw_data {
     void *data;

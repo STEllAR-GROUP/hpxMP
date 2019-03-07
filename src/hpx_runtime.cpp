@@ -602,11 +602,11 @@ void thread_setup( invoke_func kmp_invoke, microtask_t thread_func,
                    parallel_region *team, omp_task_data *parent,
                    barrier& threadBarrier)
 {
-    omp_task_data task_data(tid, team, parent);
+    intrusive_ptr task_data_ptr(new omp_task_data(tid, team, parent));
     //count up taskBarrier before set to the thread data
-    task_data.taskBarrier.count_up();
+    task_data_ptr->taskBarrier.count_up();
 
-    set_thread_data( get_self_id(), reinterpret_cast<size_t>(&task_data));
+    set_thread_data( get_self_id(), reinterpret_cast<size_t>(task_data_ptr.get()));
 
     if(argc == 0) { //note: kmp_invoke segfaults iff argc == 0
         thread_func(&tid, &tid);
@@ -641,7 +641,7 @@ void thread_setup( invoke_func kmp_invoke, microtask_t thread_func,
 #endif
 }
     // wait for the task this thread created to finish
-    task_data.taskBarrier.wait();
+    task_data_ptr->taskBarrier.wait();
     //This together keeps the task_data on this stack allocated
     team->teamTaskLatch.count_down(1);
     //can not be replaced with latch as nobody is waiting for the last depend task and task_data is destroyed too early
