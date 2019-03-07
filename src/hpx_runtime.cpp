@@ -644,6 +644,8 @@ void thread_setup( invoke_func kmp_invoke, microtask_t thread_func,
     task_data.taskBarrier.wait();
     //This together keeps the task_data on this stack allocated
     team->teamTaskLatch.count_down(1);
+    //can not be replaced with latch as nobody is waiting for the last depend task and task_data is destroyed too early
+    //should be replaced once boost intrusive pointer is in
     threadBarrier.wait();
 }
 
@@ -686,12 +688,6 @@ void fork_worker( invoke_func kmp_invoke, microtask_t thread_func,
     // wait for all the tasks in the team to finish
     team.teamTaskLatch.count_down_and_wait();
     threadBarrier.wait();
-
-    //The executor containing the tasks will be destroyed as this call goes out
-    //of scope, which will wait on all tasks contained in it. So, nothing needs
-    //to be done here for it.
-
-
 #if HPXMP_HAVE_OMPT
     if (ompt_enabled.ompt_callback_parallel_end) {
         ompt_callbacks.ompt_callback(ompt_callback_parallel_end)(
