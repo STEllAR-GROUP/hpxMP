@@ -174,7 +174,7 @@ class omp_task_data {
     public:
         //This constructor should only be used once for the implicit task
         omp_task_data( parallel_region *T, omp_device_icv *global, int init_num_threads)
-            : team(T),taskBarrier(0),taskLatch(0)
+            : team(T),taskLatch(0)
         {
             local_thread_num = 0;
             icv.device = global;
@@ -194,7 +194,7 @@ class omp_task_data {
 
         //This is for explicit tasks
         omp_task_data(int tid, parallel_region *T, omp_icv icv_vars)
-            : local_thread_num(tid), team(T), icv(icv_vars),taskBarrier(0),taskLatch(0)
+            : local_thread_num(tid), team(T), icv(icv_vars),taskLatch(0)
         {
             threads_requested = icv.nthreads;
             icv_vars.device = icv.device;
@@ -224,7 +224,6 @@ class omp_task_data {
         int single_counter{0};
         int loop_num{0};
         bool in_taskgroup{false};
-        barrier taskBarrier;
         latch taskLatch;
         atomic<int> pointer_counter{0};
         //shared_future<void> last_df_task;

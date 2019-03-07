@@ -7,7 +7,6 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fopenmp")
 set(tests
         get_thread_num
         parallel_multi
-        task_no_parallel
         task_tree_simple
         task_untied
         )
