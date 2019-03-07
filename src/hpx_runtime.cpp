@@ -216,6 +216,8 @@ void hpx_runtime::barrier_wait(){
     if(team->num_threads > 1) {
         team->globalBarrier.wait();
     }
+    //wait for all child tasks to be done
+    team->teamTaskLatch.wait();
 }
 
 //TODO: Does the spec say that outstanding tasks need to end before this begins?
@@ -249,9 +251,7 @@ void hpx_runtime::task_wait()
 {
     auto *task = get_task_data();
     intrusive_ptr task_ptr(task);
-    task_ptr->taskBarrier.count_up();
-    task_ptr->taskBarrier.wait();
-    task_ptr->taskBarrier.reset(0);
+    task_ptr->taskLatch.wait();
 }
 
 void task_setup( int gtid, kmp_task_t *task, intrusive_ptr<omp_task_data> parent_task)
@@ -299,8 +299,8 @@ else
     //if task is in taskgroup, count down taskgroup latch as this task is done
     if(parent_task->in_taskgroup)
         parent_task->taskgroupLatch->count_down(1);
-    //all child tasks has finished if reaching this point, tell parent me and my child tasks are done
-    parent_task->taskBarrier.wait();
+    //tell parent I am done
+    parent_task->taskLatch.count_down(1);
 }
 
 //task with depend with use this to setup tasks
@@ -395,9 +395,9 @@ void hpx_runtime::create_task( kmp_routine_entry_t task_func, int gtid, kmp_task
                         current_task->num_child_tasks, current_task->team );
         }
 #else
-        //this is waited in thread_setup, wait for all task this thread created to be done
+        //this is waited in taskwait, wait for all tasks before taskwait created to be done
         // create_task function is not supposed to wait anything
-        current_task_ptr->taskBarrier.count_up();
+        current_task_ptr->taskLatch.count_up(1);
         //count up number of tasks in this team
         current_task_ptr->team->teamTaskLatch.count_up(1);
         //count up number of task in taskgroup if we are under taskgroup construct
@@ -634,8 +634,6 @@ void thread_setup( invoke_func kmp_invoke, microtask_t thread_func,
     }
 #endif
 }
-    //This together keeps the task_data on this stack allocated
-    team->teamTaskLatch.count_down(1);
     //can not be replaced with latch as nobody is waiting for the last depend task and task_data is destroyed too early
     //should be replaced once boost intrusive pointer is in
     threadBarrier.wait();
@@ -667,7 +665,6 @@ void fork_worker( invoke_func kmp_invoke, microtask_t thread_func,
 #endif
     int running_threads = parent->threads_requested;
     barrier threadBarrier(running_threads+1);
-    team.teamTaskLatch.count_up(running_threads+1);
 
     for( int i = 0; i < parent->threads_requested; i++ ) {
         hpx::applier::register_thread_nullary(
@@ -677,9 +674,9 @@ void fork_worker( invoke_func kmp_invoke, microtask_t thread_func,
                 true, hpx::threads::thread_priority_low, i );
                 //true, hpx::threads::thread_priority_normal, i );
     }
-    // wait for all the tasks in the team to finish
-    team.teamTaskLatch.count_down_and_wait();
     threadBarrier.wait();
+    // wait for all the tasks in the team to finish
+    team.teamTaskLatch.wait();
 #if HPXMP_HAVE_OMPT
     if (ompt_enabled.ompt_callback_parallel_end) {
         ompt_callbacks.ompt_callback(ompt_callback_parallel_end)(
