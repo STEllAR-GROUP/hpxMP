@@ -240,7 +240,6 @@ void hpx_runtime::end_taskgroup()
     task->tg_exec.reset();
 #else
     task->taskgroupLatch->count_down_and_wait();
-    task->taskgroupLatch.reset();
 #endif
     task->in_taskgroup = false;
 }
