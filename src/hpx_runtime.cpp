@@ -228,7 +228,7 @@ bool hpx_runtime::start_taskgroup()
     //task->tg_exec.reset(new local_priority_queue_executor(task->local_thread_num));
     task->tg_exec.reset(new local_priority_queue_executor(task->team->num_threads));
 #else
-    task->tg_num_tasks.reset(new atomic<int64_t>{0});
+    task->taskgroupLatch.reset(new latch(1));
 #endif
     return true;
 }
@@ -239,12 +239,7 @@ void hpx_runtime::end_taskgroup()
 #ifdef OMP_COMPLIANT
     task->tg_exec.reset();
 #else
-    while( *(task->tg_num_tasks) > 0 ) {
-        std::cerr<<"Warning, running into busy waiting in end_taskgroup"<<std::endl;
-        //hpx::this_thread::sleep_for(std::chrono::milliseconds(100));
-        hpx::this_thread::yield();
-    }
-    task->tg_num_tasks.reset();
+    task->taskgroupLatch->count_down_and_wait();
 #endif
     task->in_taskgroup = false;
 }
@@ -256,15 +251,13 @@ void hpx_runtime::task_wait()
     task->taskBarrier.reset(1);
 }
 
-void task_setup( int gtid, kmp_task_t *task, omp_icv icv,
-                 shared_ptr<atomic<int64_t>> parent_task_counter,
-                 parallel_region *team, barrier* taskBarrier)
+void task_setup( int gtid, kmp_task_t *task, omp_task_data* parent_task)
 {
     auto task_func = task->routine;
-    omp_task_data task_data(gtid, team, icv);
-    //this makes tasks wait for the task it created
-    task_data.taskBarrier.count_up();
-    set_thread_data( get_self_id(), reinterpret_cast<size_t>(&task_data));
+    omp_task_data current_task(gtid, parent_task->team, parent_task->icv);
+    //this makes tasks wait for the task it created, aka task created tasks
+    current_task.taskBarrier.count_up();
+    set_thread_data( get_self_id(), reinterpret_cast<size_t>(&current_task));
 #if HPXMP_HAVE_OMPT
     ompt_data_t *my_task_data = &hpx_backend->get_task_data()->task_data;
     if (ompt_enabled.ompt_callback_task_create)
@@ -282,15 +275,14 @@ void task_setup( int gtid, kmp_task_t *task, omp_icv icv,
             prior_task_data, status, my_task_data);
     }
 #endif
-
+    // actually running the taskfunctions
 if(! task->gcc)
     task_func(gtid, task);
 else
     ((void (*)(void *))(*(task->routine)))(task->shareds);
-
-    *(parent_task_counter) -= 1;
 #ifndef OMP_COMPLIANT
-    team->num_tasks--;
+    //count down number of tasks under team
+    current_task.team->teamTaskLatch.count_down(1);
 #endif
     if(task->part_id ==0)
         delete[] (char*)task;
@@ -304,23 +296,25 @@ else
     }
 #endif
     //this makes tasks wait for the task it created, thus this thread data is not used anymore
-    task_data.taskBarrier.wait();
-//  make sure nothing is accessing this thread data after task_data got destroyed
+    current_task.taskBarrier.wait();
+    //make sure nothing is accessing this thread data after task_data got destroyed
     set_thread_data( get_self_id(), reinterpret_cast<size_t>(nullptr));
+    //if task is in taskgroup, count down taskgroup latch as this task is done
+    if(parent_task->in_taskgroup)
+        parent_task->taskgroupLatch->count_down(1);
     //all child tasks has finished if reaching this point, tell parent me and my child tasks are done
-    taskBarrier->wait();
+    parent_task->taskBarrier.wait();
 }
 
 //task with depend with use this to setup tasks
-void task_setup_df( int gtid, kmp_task_t *task, omp_icv icv,
-                 shared_ptr<atomic<int64_t>> parent_task_counter,
-                 parallel_region *team, barrier* taskBarrier)
+void task_setup_df( int gtid, kmp_task_t *task, omp_task_data* parent_task)
 {
     auto task_func = task->routine;
-    omp_task_data task_data(gtid, team, icv);
+    omp_task_data current_task(gtid, parent_task->team, parent_task->icv);
     //this makes tasks wait for the task it created
-    task_data.taskBarrier.count_up();
-    set_thread_data( get_self_id(), reinterpret_cast<size_t>(&task_data));
+    current_task.taskBarrier.count_up();
+    current_task.taskLatch.count_up(1);
+    set_thread_data( get_self_id(), reinterpret_cast<size_t>(&current_task));
 #if HPXMP_HAVE_OMPT
     ompt_data_t *my_task_data = &hpx_backend->get_task_data()->task_data;
     if (ompt_enabled.ompt_callback_task_create)
@@ -344,9 +338,8 @@ void task_setup_df( int gtid, kmp_task_t *task, omp_icv icv,
     else
         ((void (*)(void *))(*(task->routine)))(task->shareds);
 
-    *(parent_task_counter) -= 1;
 #ifndef OMP_COMPLIANT
-    team->num_tasks--;
+    current_task.team->teamTaskLatch.count_down(1);
 #endif
     if(task->part_id ==0)
         delete[] (char*)task;
@@ -359,14 +352,16 @@ void task_setup_df( int gtid, kmp_task_t *task, omp_icv icv,
             my_task_data, status_fin, prior_task_data);
     }
 #endif
-    //this makes tasks wait for the task it created, thus this thread data is not used anymore
-    task_data.taskBarrier.wait();
-//  make sure nothing is accessing this thread data after task_data got destroyed
+    //this two line makes tasks wait for the task it created, thus this thread data is not used anymore
+    //the perpose is to keep this thread data allocated and not goes out of scope when its child are still using it
+    current_task.taskBarrier.wait();
+    current_task.taskLatch.count_down_and_wait();
+    //make sure nothing is accessing this thread data after task_data got destroyed
     set_thread_data( get_self_id(), reinterpret_cast<size_t>(nullptr));
-    //create another thread to wait, let this function return to fullfill when_all requirement in df task function
-    hpx::applier::register_thread_nullary(
-        [taskBarrier]() { taskBarrier->wait(); }, "df_task_wait",
-        hpx::threads::pending, true, hpx::threads::thread_priority_normal);
+    if(parent_task->in_taskgroup)
+        parent_task->taskgroupLatch->count_down(1);
+    // no wait, return thus the when_all in task_create_df can continue
+    parent_task->taskLatch.count_down(1);
 }
 
 #ifdef OMP_COMPLIANT
@@ -403,15 +398,17 @@ void hpx_runtime::create_task( kmp_routine_entry_t task_func, int gtid, kmp_task
                         current_task->num_child_tasks, current_task->team );
         }
 #else
-        //TODO: add taskgroups in non compliant version
-        *(current_task->num_child_tasks) += 1;
-        //this is waited in thread_setup, create_task is not supposed to wait anything
+        //this is waited in thread_setup, wait for all task this thread created to be done
+        // create_task function is not supposed to wait anything
         current_task->taskBarrier.count_up();
-        current_task->team->num_tasks++;
+        //count up number of tasks in this team
+        current_task->team->teamTaskLatch.count_up(1);
+        //count up number of task in taskgroup if we are under taskgroup construct
+        if(current_task->in_taskgroup)
+            current_task->taskgroupLatch->count_up(1);
         //this fixes hpx::apply changes in hpx backend
         hpx::applier::register_thread_nullary(
-            std::bind(&task_setup, gtid, thunk, current_task->icv,
-                current_task->num_child_tasks, current_task->team, &current_task->taskBarrier),
+            std::bind(&task_setup, gtid, thunk, current_task),
             "omp_explicit_task", hpx::threads::pending, true,
             hpx::threads::thread_priority_normal);
 #endif
@@ -422,12 +419,10 @@ void hpx_runtime::create_task( kmp_routine_entry_t task_func, int gtid, kmp_task
 //    }
 }
 
-void df_task_wrapper( int gtid, kmp_task_t *task, omp_icv icv,
-                      shared_ptr<atomic<int64_t>> task_counter,
-                      parallel_region *team,
-                      vector<shared_future<void>> deps, barrier* taskBarrier)
+//deps will notify when_all function
+void df_task_wrapper( int gtid, kmp_task_t *task, omp_task_data* parent_task, vector<shared_future<void>> deps)
 {
-    task_setup_df( gtid, task, icv, task_counter, team, taskBarrier);
+    task_setup_df( gtid, task, parent_task);
 }
 
 #ifdef OMP_COMPLIANT
@@ -448,32 +443,32 @@ void hpx_runtime::create_df_task( int gtid, kmp_task_t *thunk,
                            int ndeps, kmp_depend_info_t *dep_list,
                            int ndeps_noalias, kmp_depend_info_t *noalias_dep_list )
 {
-    auto task = get_task_data();
-    auto team = task->team;
+    auto current_task = get_task_data();
+    auto team = current_task->team;
     vector<shared_future<void>> dep_futures;
     dep_futures.reserve( ndeps + ndeps_noalias);
 
     //Populating a vector of futures that the task depends on
     for(int i = 0; i < ndeps;i++) {
-        if(task->df_map.count( dep_list[i].base_addr) > 0) {
-            dep_futures.push_back(task->df_map[dep_list[i].base_addr]);
+        if(current_task->df_map.count( dep_list[i].base_addr) > 0) {
+            dep_futures.push_back(current_task->df_map[dep_list[i].base_addr]);
         }
     }
     for(int i = 0; i < ndeps_noalias;i++) {
-        if(task->df_map.count( noalias_dep_list[i].base_addr) > 0) {
-            dep_futures.push_back(task->df_map[noalias_dep_list[i].base_addr]);
+        if(current_task->df_map.count( noalias_dep_list[i].base_addr) > 0) {
+            dep_futures.push_back(current_task->df_map[noalias_dep_list[i].base_addr]);
         }
     }
 
     shared_future<void> new_task;
 
-    if(task->in_taskgroup) {
+    if(current_task->in_taskgroup) {
+        current_task->taskgroupLatch->count_up(1);
     } else {
-        *(task->num_child_tasks) += 1;
-        task->taskBarrier.count_up();
+        current_task->taskLatch.count_up(1);
     }
 #ifndef OMP_COMPLIANT
-    team->num_tasks++;
+    team->teamTaskLatch.count_up(1);
 #endif
     if(dep_futures.size() == 0) {
 #ifdef OMP_COMPLIANT
@@ -485,8 +480,7 @@ void hpx_runtime::create_df_task( int gtid, kmp_task_t *thunk,
                                     task->num_child_tasks, team);
         }
 #else
-        new_task = hpx::async(task_setup_df, gtid, thunk, task->icv,
-                                task->num_child_tasks, team, &task->taskBarrier);
+        new_task = hpx::async(task_setup_df, gtid, thunk, current_task);
 #endif
     } else {
 
@@ -506,19 +500,17 @@ void hpx_runtime::create_df_task( int gtid, kmp_task_t *thunk,
                                  team, hpx::when_all(dep_futures) );
         }
 #else
-        new_task = dataflow( unwrapping(df_task_wrapper), gtid, thunk, task->icv,
-                             task->num_child_tasks,
-                             team, hpx::when_all(dep_futures), &task->taskBarrier);
+        new_task = dataflow( unwrapping(df_task_wrapper), gtid, thunk, current_task, hpx::when_all(dep_futures));
 #endif
     }
     for(int i = 0 ; i < ndeps; i++) {
         if(dep_list[i].flags.out) {
-            task->df_map[dep_list[i].base_addr] = new_task;
+            current_task->df_map[dep_list[i].base_addr] = new_task;
         }
     }
     for(int i = 0 ; i < ndeps_noalias; i++) {
         if(noalias_dep_list[i].flags.out) {
-            task->df_map[noalias_dep_list[i].base_addr] = new_task;
+            current_task->df_map[noalias_dep_list[i].base_addr] = new_task;
         }
     }
     //task->last_df_task = new_task;
@@ -647,8 +639,12 @@ void thread_setup( invoke_func kmp_invoke, microtask_t thread_func,
     }
 #endif
 }
+    // wait for the task this thread created to finish
     task_data.taskBarrier.wait();
-    //This keeps the task_data on this stack allocated.
+    //This together keeps the task_data on this stack allocated
+    team->teamTaskLatch.count_down(1);
+    //can not be replaced with latch as nobody is waiting for the last depend task and task_data is destroyed too early
+    //should be replaced once boost intrusive pointer is in
     threadBarrier.wait();
 }
 
@@ -678,6 +674,7 @@ void fork_worker( invoke_func kmp_invoke, microtask_t thread_func,
 #endif
     int running_threads = parent->threads_requested;
     barrier threadBarrier(running_threads+1);
+    team.teamTaskLatch.count_up(running_threads+1);
 
     for( int i = 0; i < parent->threads_requested; i++ ) {
         hpx::applier::register_thread_nullary(
@@ -687,13 +684,9 @@ void fork_worker( invoke_func kmp_invoke, microtask_t thread_func,
                 true, hpx::threads::thread_priority_low, i );
                 //true, hpx::threads::thread_priority_normal, i );
     }
+    // wait for all the tasks in the team to finish
+    team.teamTaskLatch.count_down_and_wait();
     threadBarrier.wait();
-
-    //The executor containing the tasks will be destroyed as this call goes out
-    //of scope, which will wait on all tasks contained in it. So, nothing needs
-    //to be done here for it.
-
-
 #if HPXMP_HAVE_OMPT
     if (ompt_enabled.ompt_callback_parallel_end) {
         ompt_callbacks.ompt_callback(ompt_callback_parallel_end)(

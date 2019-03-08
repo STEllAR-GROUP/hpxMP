@@ -41,6 +41,7 @@ using std::atomic;
 using boost::shared_ptr;
 using hpx::threads::executors::local_priority_queue_executor;
 using hpx::lcos::local::barrier;
+using hpx::lcos::local::latch;
 using hpx::lcos::shared_future;
 using hpx::lcos::future;
 using std::vector;
@@ -129,7 +130,7 @@ class loop_data {
 struct parallel_region {
 
     parallel_region( int N ) : num_threads(N), globalBarrier(N),
-                               depth(0), reduce_data(N)
+                               depth(0), reduce_data(N), teamTaskLatch(0)
     {};
 
     parallel_region( parallel_region *parent, int threads_requested ) : parallel_region(threads_requested)
@@ -147,13 +148,13 @@ struct parallel_region {
     mutex_type thread_mtx{};
     mutex_type single_mtx{};
     int depth;
-    atomic<int64_t> num_tasks{0};
     atomic<int> single_counter{0};
     atomic<int> current_single_thread{-1};
     void *copyprivate_data;
     vector<void*> reduce_data;
     vector<loop_data> loop_list;
     mutex_type loop_mtx;
+    latch teamTaskLatch;
 #if (HPXMP_HAVE_OMPT)
     ompt_data_t parent_data = ompt_data_none;
     ompt_data_t parallel_data = ompt_data_none;
@@ -171,8 +172,8 @@ class omp_task_data {
     public:
         //This constructor should only be used once for the implicit task
         omp_task_data( parallel_region *T, omp_device_icv *global, int init_num_threads)
-            : team(T), num_child_tasks(new atomic<int64_t>{0}),taskBarrier(0)
-              {
+            : team(T),taskBarrier(0),taskLatch(0)
+        {
             local_thread_num = 0;
             icv.device = global;
             icv.nthreads = init_num_threads;
@@ -191,7 +192,7 @@ class omp_task_data {
 
         //This is for explicit tasks
         omp_task_data(int tid, parallel_region *T, omp_icv icv_vars)
-            : local_thread_num(tid), team(T), num_child_tasks(new atomic<int64_t>{0}), icv(icv_vars),taskBarrier(0)
+            : local_thread_num(tid), team(T), icv(icv_vars),taskBarrier(0),taskLatch(0)
         {
             threads_requested = icv.nthreads;
             icv_vars.device = icv.device;
@@ -218,11 +219,11 @@ class omp_task_data {
         parallel_region *team;
         //mutex_type thread_mutex;
         //hpx::lcos::local::condition_variable_any thread_cond;
-        shared_ptr<atomic<int64_t>> num_child_tasks;
         int single_counter{0};
         int loop_num{0};
         bool in_taskgroup{false};
         barrier taskBarrier;
+        latch taskLatch;
         //shared_future<void> last_df_task;
 #if HPXMP_HAVE_OMPT
         ompt_data_t task_data = ompt_data_none;
@@ -231,7 +232,7 @@ class omp_task_data {
 #ifdef OMP_COMPLIANT
         shared_ptr<local_priority_queue_executor> tg_exec;
 #else
-        shared_ptr<atomic<int64_t>> tg_num_tasks;
+        shared_ptr<latch> taskgroupLatch;
 #endif
 
         omp_icv icv;
