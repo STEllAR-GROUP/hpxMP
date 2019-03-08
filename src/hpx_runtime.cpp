@@ -537,10 +537,10 @@ void hpx_runtime::create_future_task( int gtid, kmp_task_t *thunk,
 
 void thread_setup( invoke_func kmp_invoke, microtask_t thread_func,
                    int argc, void **argv, int tid,
-                   parallel_region *team, omp_task_data *parent,
+                   parallel_region *team, intrusive_ptr<omp_task_data> parent,
                    latch& threadLatch)
 {
-    intrusive_ptr task_data_ptr(new omp_task_data(tid, team, parent));
+    intrusive_ptr task_data_ptr(new omp_task_data(tid, team, parent.get()));
 
     set_thread_data( get_self_id(), reinterpret_cast<size_t>(task_data_ptr.get()));
 
@@ -583,7 +583,7 @@ void thread_setup( invoke_func kmp_invoke, microtask_t thread_func,
 // that data is not initialized for the new hpx threads yet.
 void fork_worker( invoke_func kmp_invoke, microtask_t thread_func,
                   int argc, void **argv,
-                  omp_task_data *parent)
+                  intrusive_ptr<omp_task_data> parent)
 {
     parallel_region team(parent->team, parent->threads_requested);
 
@@ -631,13 +631,14 @@ void fork_worker( invoke_func kmp_invoke, microtask_t thread_func,
 void hpx_runtime::fork(invoke_func kmp_invoke, microtask_t thread_func, int argc, void** argv)
 {
     omp_task_data *current_task = get_task_data();
+    intrusive_ptr current_task_ptr(current_task);
 
     if( hpx::threads::get_self_ptr() ) {
-        fork_worker(kmp_invoke, thread_func, argc, argv, current_task);
+        fork_worker(kmp_invoke, thread_func, argc, argv, current_task_ptr);
     } else {
         //this handles the sync for hox threads.
         hpx::threads::run_as_hpx_thread(&fork_worker,kmp_invoke, thread_func, argc, argv,
-                                        current_task);
+                                        current_task_ptr);
     }
     current_task->set_threads_requested(current_task->icv.nthreads );
 }

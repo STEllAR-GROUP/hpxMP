@@ -292,7 +292,7 @@ class hpx_runtime {
 
     private:
         shared_ptr<parallel_region> implicit_region;
-        shared_ptr<omp_task_data> initial_thread;
+        intrusive_ptr<omp_task_data> initial_thread;
         int num_procs;
         shared_ptr<high_resolution_timer> walltime;
         bool external_hpx;
