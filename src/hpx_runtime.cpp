@@ -164,7 +164,7 @@ bool hpx_runtime::set_thread_data_check() {
     return false;
 }
 
-omp_task_data* hpx_runtime::get_task_data()
+intrusive_ptr<omp_task_data> hpx_runtime::get_task_data()
 {
     omp_task_data *data;
     if(hpx::threads::get_self_ptr()) {
@@ -173,10 +173,11 @@ omp_task_data* hpx_runtime::get_task_data()
             std::cerr<<"trying to get null hpx thread data\n";
             data = initial_thread.get();
         }
-    } else {
-        data = initial_thread.get();
     }
-    return data;
+    else
+        data = initial_thread.get();
+    intrusive_ptr<omp_task_data> data_ptr(data);
+    return data_ptr;
 }
 
 double hpx_runtime::get_time() {
@@ -222,7 +223,7 @@ void hpx_runtime::barrier_wait(){
 //TODO: Does the spec say that outstanding tasks need to end before this begins?
 bool hpx_runtime::start_taskgroup()
 {
-    auto *task = get_task_data();
+    auto task = get_task_data();
     task->in_taskgroup = true;
 #ifdef OMP_COMPLIANT
     //FIXME: why is this local_thread_num? shouldn't it be team->num_threads
@@ -236,7 +237,7 @@ bool hpx_runtime::start_taskgroup()
 
 void hpx_runtime::end_taskgroup()
 {
-    auto *task = get_task_data();
+    auto task = get_task_data();
 #ifdef OMP_COMPLIANT
     task->tg_exec.reset();
 #else
@@ -248,7 +249,7 @@ void hpx_runtime::end_taskgroup()
 
 void hpx_runtime::task_wait()
 {
-    auto *task = get_task_data();
+    auto task = get_task_data();
     intrusive_ptr task_ptr(task);
     task_ptr->taskLatch.wait();
 }
@@ -323,8 +324,7 @@ void tg_task_setup( int gtid, kmp_task_t *task, omp_icv icv,
 //causing its omp_task_data to be deallocated.
 void hpx_runtime::create_task( kmp_routine_entry_t task_func, int gtid, kmp_task_t *thunk)
 {
-    auto *current_task = get_task_data();
-    intrusive_ptr current_task_ptr(current_task);
+    auto current_task_ptr = get_task_data();
     if(current_task_ptr->team->num_threads > 0) {
 #ifdef OMP_COMPLIANT
         if(current_task->in_taskgroup) {
@@ -381,21 +381,20 @@ void hpx_runtime::create_df_task( int gtid, kmp_task_t *thunk,
                            int ndeps, kmp_depend_info_t *dep_list,
                            int ndeps_noalias, kmp_depend_info_t *noalias_dep_list )
 {
-    auto current_task = get_task_data();
-    intrusive_ptr current_task_ptr(current_task);
+    auto current_task_ptr = get_task_data();
     auto team = current_task_ptr->team;
     vector<shared_future<void>> dep_futures;
     dep_futures.reserve( ndeps + ndeps_noalias);
 
     //Populating a vector of futures that the task depends on
     for(int i = 0; i < ndeps;i++) {
-        if(current_task->df_map.count( dep_list[i].base_addr) > 0) {
-            dep_futures.push_back(current_task->df_map[dep_list[i].base_addr]);
+        if(current_task_ptr->df_map.count( dep_list[i].base_addr) > 0) {
+            dep_futures.push_back(current_task_ptr->df_map[dep_list[i].base_addr]);
         }
     }
     for(int i = 0; i < ndeps_noalias;i++) {
-        if(current_task->df_map.count( noalias_dep_list[i].base_addr) > 0) {
-            dep_futures.push_back(current_task->df_map[noalias_dep_list[i].base_addr]);
+        if(current_task_ptr->df_map.count( noalias_dep_list[i].base_addr) > 0) {
+            dep_futures.push_back(current_task_ptr->df_map[noalias_dep_list[i].base_addr]);
         }
     }
 
@@ -630,16 +629,15 @@ void fork_worker( invoke_func kmp_invoke, microtask_t thread_func,
 //TODO: according to the spec, the current thread should be thread 0 of the new team, and execute the new work.
 void hpx_runtime::fork(invoke_func kmp_invoke, microtask_t thread_func, int argc, void** argv)
 {
-    omp_task_data *current_task = get_task_data();
-    intrusive_ptr current_task_ptr(current_task);
+    auto current_task_ptr = get_task_data();
 
     if( hpx::threads::get_self_ptr() ) {
         fork_worker(kmp_invoke, thread_func, argc, argv, current_task_ptr);
     } else {
-        //this handles the sync for hox threads.
+        //this handles the sync for hpx threads.
         hpx::threads::run_as_hpx_thread(&fork_worker,kmp_invoke, thread_func, argc, argv,
                                         current_task_ptr);
     }
-    current_task->set_threads_requested(current_task->icv.nthreads );
+    current_task_ptr->set_threads_requested(current_task_ptr->icv.nthreads );
 }
 
