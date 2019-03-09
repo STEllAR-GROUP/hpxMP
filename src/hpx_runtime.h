@@ -67,15 +67,29 @@ typedef int (* kmp_routine_entry_t)( int, void * );
 
 typedef std::map<int64_t, hpx::shared_future<void>> depends_map;
 
-typedef struct kmp_task {
+struct kmp_task_t {
     void *              shareds;
     kmp_routine_entry_t routine;
     int                 part_id;
     bool                gcc;
+    atomic<int> pointer_counter;
 #if OMP_40_ENABLED
     kmp_routine_entry_t destructors;
 #endif
-} kmp_task_t;
+};
+
+inline void intrusive_ptr_add_ref(kmp_task_t *x)
+{
+    ++x->pointer_counter;
+    std::cout<<x->pointer_counter<<std::endl;
+}
+
+inline void intrusive_ptr_release(kmp_task_t *x)
+{
+    std::cout<<--x->pointer_counter<<std::endl;
+    if (x->pointer_counter == 0)
+        delete x;
+}
 
 
 typedef struct kmp_depend_info {
@@ -271,7 +285,7 @@ class hpx_runtime {
         void barrier_wait();
         void create_task( omp_task_func taskfunc, void *frame_pointer,
                           void *firstprivates, int is_tied, int blocks_parent);
-        void create_task( kmp_routine_entry_t taskfunc, int gtid, kmp_task_t *task);
+        void create_task( kmp_routine_entry_t taskfunc, int gtid, intrusive_ptr<kmp_task_t> task);
         void create_df_task( int gtid, kmp_task_t *thunk,
                              int ndeps, kmp_depend_info_t *dep_list,
                              int ndeps_noalias, kmp_depend_info_t *noalias_dep_list );

@@ -92,12 +92,13 @@ __kmpc_omp_task_alloc( ident_t *loc_ref, kmp_int32 gtid, kmp_int32 flags,
     //kmp_tasking_flags_t *input_flags = (kmp_tasking_flags_t *) & flags;
     //TODO: do I need to do something with these flags?
     int task_size = sizeof_kmp_task_t + (-sizeof_kmp_task_t%8);
-
+    //can be sure that no deletion of task happens here, no need of intrusive ptr
     kmp_task_t *task = (kmp_task_t*)new char[task_size + sizeof_shareds]; 
 
     //This gets deleted at the end of task_setup
     task->routine = task_entry;
     task->gcc = false;
+    task->pointer_counter = 0;
     if( sizeof_shareds == 0 ) {
         task->shareds = NULL;
     } else {
@@ -112,7 +113,8 @@ int __kmpc_omp_task( ident_t *loc_ref, kmp_int32 gtid, kmp_task_t * new_task){
         std::cout<<"__kmpc_omp_task"<<std::endl;
     #endif
     start_backend();
-    hpx_backend->create_task(new_task->routine, gtid, new_task);
+    intrusive_ptr new_task_ptr(new_task);
+    hpx_backend->create_task(new_task_ptr->routine, gtid, new_task_ptr);
     return 1;
 }
 
