@@ -32,6 +32,7 @@ set(tests
         #single_copyprivate_1var    #failure sometime
         single_nowait
         taskgroup #to be implemented, not checking correctness
+        task_in_reduction
         task_fp
         task_tree
         taskwait
