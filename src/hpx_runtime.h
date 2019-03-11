@@ -81,12 +81,10 @@ struct kmp_task_t {
 inline void intrusive_ptr_add_ref(kmp_task_t *x)
 {
     ++x->pointer_counter;
-    std::cout<<x->pointer_counter<<std::endl;
 }
 
 inline void intrusive_ptr_release(kmp_task_t *x)
 {
-    std::cout<<--x->pointer_counter<<std::endl;
     if (x->pointer_counter == 0)
         delete x;
 }
@@ -100,6 +98,16 @@ typedef struct kmp_depend_info {
         bool  out:1;
     } flags;
 } kmp_depend_info_t;
+
+typedef struct kmp_taskgroup {
+    std::atomic<int> count; // number of allocated and incomplete tasks
+    std::atomic<int>
+            cancel_request; // request for cancellation of this taskgroup
+    struct kmp_taskgroup *parent; // parent taskgroup
+    // Block of data to perform task reduction
+    void *reduce_data; // reduction related info
+    int reduce_num_data; // number of data items to reduce
+} kmp_taskgroup_t;
 
 class loop_data {
     public:
@@ -253,6 +261,7 @@ class omp_task_data {
 
         omp_icv icv;
         depends_map df_map;
+        kmp_taskgroup_t* td_taskgroup;
 };
 
 inline void intrusive_ptr_add_ref(omp_task_data *x)
