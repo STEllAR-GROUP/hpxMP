@@ -698,7 +698,7 @@ xexpand(KMP_API_NAME_GOMP_PARALLEL)(void (*task)(void *), void *data, unsigned n
 #endif
     start_backend();
     //__kmpc_push_num_threads
-    omp_task_data * my_data = hpx_backend->get_task_data();
+    auto my_data = hpx_backend->get_task_data();
     my_data->set_threads_requested(num_threads);
 
     __kmp_GOMP_fork_call(task,(microtask_t )__kmp_GOMP_microtask_wrapper, 2, task, data);
@@ -714,7 +714,7 @@ xexpand(KMP_API_NAME_GOMP_PARALLEL_SECTIONS)(void (*task) (void *), void *data,
     //from gomp parallel
     start_backend();
     //from __kmpc_push_num_threads
-    omp_task_data * my_data = hpx_backend->get_task_data();
+    auto my_data = hpx_backend->get_task_data();
     my_data->set_threads_requested(num_threads);
 
     __kmp_GOMP_fork_call(task,
@@ -730,7 +730,7 @@ xexpand(KMP_API_NAME_GOMP_PARALLEL_SECTIONS)(void (*task) (void *), void *data,
         long ub, long str, long chunk_sz, unsigned flags)                      \
     {                                                                          \
         start_backend();                                                       \
-        omp_task_data *my_data = hpx_backend->get_task_data();                 \
+        auto my_data = hpx_backend->get_task_data();                 \
         my_data->set_threads_requested(num_threads);                           \
         __kmp_GOMP_fork_call(task,                                             \
             (microtask_t) __kmp_GOMP_parallel_microtask_wrapper, 9, task,      \

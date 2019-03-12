@@ -27,6 +27,7 @@
 #include <boost/lexical_cast.hpp>
 #include <boost/assign/std/vector.hpp>
 #include <boost/cstdint.hpp>
+#include <boost/intrusive_ptr.hpp>
 //#include <boost/thread/mutex.hpp>
 //#include <boost/thread/condition.hpp>
 
@@ -46,6 +47,7 @@ using hpx::lcos::shared_future;
 using hpx::lcos::future;
 using std::vector;
 using hpx::util::high_resolution_timer;
+using boost::intrusive_ptr;
 
 
 typedef void (*microtask_t)( int *gtid, int *npr, ... );
@@ -172,7 +174,7 @@ class omp_task_data {
     public:
         //This constructor should only be used once for the implicit task
         omp_task_data( parallel_region *T, omp_device_icv *global, int init_num_threads)
-            : team(T),taskBarrier(0),taskLatch(0)
+            : team(T),taskLatch(0)
         {
             local_thread_num = 0;
             icv.device = global;
@@ -192,7 +194,7 @@ class omp_task_data {
 
         //This is for explicit tasks
         omp_task_data(int tid, parallel_region *T, omp_icv icv_vars)
-            : local_thread_num(tid), team(T), icv(icv_vars),taskBarrier(0),taskLatch(0)
+            : local_thread_num(tid), team(T), icv(icv_vars),taskLatch(0)
         {
             threads_requested = icv.nthreads;
             icv_vars.device = icv.device;
@@ -222,8 +224,8 @@ class omp_task_data {
         int single_counter{0};
         int loop_num{0};
         bool in_taskgroup{false};
-        barrier taskBarrier;
         latch taskLatch;
+        atomic<int> pointer_counter{0};
         //shared_future<void> last_df_task;
 #if HPXMP_HAVE_OMPT
         ompt_data_t task_data = ompt_data_none;
@@ -239,6 +241,17 @@ class omp_task_data {
         depends_map df_map;
 };
 
+inline void intrusive_ptr_add_ref(omp_task_data *x)
+{
+    ++x->pointer_counter;
+}
+
+inline void intrusive_ptr_release(omp_task_data *x)
+{
+    if (--x->pointer_counter == 0)
+        delete x;
+}
+
 struct raw_data {
     void *data;
     size_t size;
@@ -250,7 +263,7 @@ class hpx_runtime {
         void fork(invoke_func kmp_invoke, microtask_t thread_func, int argc, void** argv);
         parallel_region* get_team();
         bool set_thread_data_check();
-        omp_task_data* get_task_data();
+        intrusive_ptr<omp_task_data> get_task_data();
         int get_thread_num();
         int get_num_threads();
         int get_num_procs();
@@ -279,7 +292,7 @@ class hpx_runtime {
 
     private:
         shared_ptr<parallel_region> implicit_region;
-        shared_ptr<omp_task_data> initial_thread;
+        intrusive_ptr<omp_task_data> initial_thread;
         int num_procs;
         shared_ptr<high_resolution_timer> walltime;
         bool external_hpx;

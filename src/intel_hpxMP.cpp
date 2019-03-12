@@ -301,7 +301,7 @@ __kmpc_push_num_threads( ident_t *loc,
     #endif
     start_backend();
     start_backend();
-    omp_task_data *data = hpx_backend->get_task_data();
+    auto data = hpx_backend->get_task_data();
     data->set_threads_requested( num_threads );
 }
 
@@ -372,7 +372,7 @@ int __kmpc_single(ident_t *loc, int tid){
     if(!hpx_backend || !hpx::threads::get_self_ptr() ) {
         return 1;
     }
-    auto *task = hpx_backend->get_task_data();
+    auto task = hpx_backend->get_task_data();
     auto *team = task->team;
     int do_work = 0;
 
