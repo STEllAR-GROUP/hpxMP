@@ -265,7 +265,9 @@ extern "C" void omp_unset_nest_lock(omp_lock_t **lock);
 extern "C" int omp_test_lock(omp_lock_t **lock);
 extern "C" int omp_test_nest_lock(omp_lock_t **lock);
 
+#if HPXMP_HAVE_OMP_50_ENABLED
 extern "C" void *__kmpc_task_reduction_init(int gtid, int num, void *data);
 extern "C" void *__kmpc_task_reduction_get_th_data(int gtid, void *tskgrp, void *data);
 void __kmp_task_reduction_fini(void *thr, kmp_taskgroup_t *tg);
+#endif
 

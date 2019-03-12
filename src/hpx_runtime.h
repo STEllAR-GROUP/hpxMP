@@ -127,15 +127,15 @@ struct kmp_task_red_input_t {
     kmp_task_red_flags_t flags; // flags for additional info from compiler
 };
 
-typedef struct kmp_taskgroup {
+struct kmp_taskgroup_t {
     std::atomic<int> count; // number of allocated and incomplete tasks
     std::atomic<int>
             cancel_request; // request for cancellation of this taskgroup
-    struct kmp_taskgroup *parent; // parent taskgroup
+     kmp_taskgroup_t* parent; // parent taskgroup
     // Block of data to perform task reduction
     shared_ptr<vector<kmp_task_red_data_t>> reduce_data; // reduction related info
     int reduce_num_data; // number of data items to reduce
-} kmp_taskgroup_t;
+};
 #endif
 
 class loop_data {
@@ -290,7 +290,9 @@ class omp_task_data {
 
         omp_icv icv;
         depends_map df_map;
+#if HPXMP_HAVE_OMP_50_ENABLED
         kmp_taskgroup_t* td_taskgroup;
+#endif
 };
 
 inline void intrusive_ptr_add_ref(omp_task_data *x)

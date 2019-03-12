@@ -22,4 +22,7 @@ int main(int argc, char **argv)
         }
         std::cout<<sum<<std::endl;
     }
+    if(sum!=100)
+        return 1;
+    return 0;
 }

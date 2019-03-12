@@ -32,19 +32,17 @@ set(tests
         #single_copyprivate_1var    #failure sometime
         single_nowait
         taskgroup
-        task_in_reduction
         task_fp
         task_tree
         taskwait
         taskwait_2
         #threadprivate  #failure sometime
         )
-
-set(tests_enhanced
-        app_omp_fib
-        task_depend
-    )
-
+if(HPXMP_WITH_OMP_50_ENABLED)
+    set(tests_omp50
+            task_in_reduction
+            )
+endif()
 enable_testing()
 
 macro(do_test name)
@@ -88,3 +86,11 @@ foreach(test ${tests_enhanced})
     add_executable(${test} ${sources})
     do_test_enhanced(${test})
 endforeach()
+
+if(HPXMP_WITH_OMP_50_ENABLED)
+    foreach(test ${tests_omp50})
+        set(sources ${test}.cpp)
+        add_executable(${test} ${sources})
+        do_test_enhanced(${test})
+    endforeach()
+endif()
