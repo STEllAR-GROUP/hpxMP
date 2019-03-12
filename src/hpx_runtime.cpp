@@ -174,8 +174,9 @@ intrusive_ptr<omp_task_data> hpx_runtime::get_task_data()
             data = initial_thread.get();
         }
     }
-    else
+    else {
         data = initial_thread.get();
+    }
     intrusive_ptr<omp_task_data> data_ptr(data);
     return data_ptr;
 }
