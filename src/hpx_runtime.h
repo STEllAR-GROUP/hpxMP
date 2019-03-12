@@ -99,6 +99,34 @@ typedef struct kmp_depend_info {
     } flags;
 } kmp_depend_info_t;
 
+#if HPXMP_HAVE_OMP_50_ENABLED
+typedef struct kmp_task_red_flags {
+    unsigned lazy_priv : 1; // hint: (1) use lazy allocation (big objects)
+    unsigned reserved31 : 31;
+} kmp_task_red_flags_t;
+
+// internal structure for reduction data item related info
+typedef struct kmp_task_red_data {
+    void *reduce_shar; // shared reduction item
+    size_t reduce_size; // size of data item
+    void *reduce_priv; // thread specific data
+    void *reduce_pend; // end of private data for comparison op
+    void *reduce_init; // data initialization routine
+    void *reduce_fini; // data finalization routine
+    void *reduce_comb; // data combiner routine
+    kmp_task_red_flags_t flags; // flags for additional info from compiler
+} kmp_task_red_data_t;
+
+// structure sent us by compiler - one per reduction item
+typedef struct kmp_task_red_input {
+    void *reduce_shar; // shared reduction item
+    size_t reduce_size; // size of data item
+    void *reduce_init; // data initialization routine
+    void *reduce_fini; // data finalization routine
+    void *reduce_comb; // data combiner routine
+    kmp_task_red_flags_t flags; // flags for additional info from compiler
+} kmp_task_red_input_t;
+
 typedef struct kmp_taskgroup {
     std::atomic<int> count; // number of allocated and incomplete tasks
     std::atomic<int>
@@ -108,6 +136,7 @@ typedef struct kmp_taskgroup {
     void *reduce_data; // reduction related info
     int reduce_num_data; // number of data items to reduce
 } kmp_taskgroup_t;
+#endif
 
 class loop_data {
     public:

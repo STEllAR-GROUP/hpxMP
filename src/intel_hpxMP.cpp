@@ -204,35 +204,8 @@ kmp_int32 __kmpc_omp_taskyield(ident_t *loc_ref, kmp_int32 gtid, int end_part ){
     return 0;
 }
 
+#if HPXMP_HAVE_OMP_50_ENABLED
 // Task Reduction implementation
-
-typedef struct kmp_task_red_flags {
-    unsigned lazy_priv : 1; // hint: (1) use lazy allocation (big objects)
-    unsigned reserved31 : 31;
-} kmp_task_red_flags_t;
-
-// internal structure for reduction data item related info
-typedef struct kmp_task_red_data {
-    void *reduce_shar; // shared reduction item
-    size_t reduce_size; // size of data item
-    void *reduce_priv; // thread specific data
-    void *reduce_pend; // end of private data for comparison op
-    void *reduce_init; // data initialization routine
-    void *reduce_fini; // data finalization routine
-    void *reduce_comb; // data combiner routine
-    kmp_task_red_flags_t flags; // flags for additional info from compiler
-} kmp_task_red_data_t;
-
-// structure sent us by compiler - one per reduction item
-typedef struct kmp_task_red_input {
-    void *reduce_shar; // shared reduction item
-    size_t reduce_size; // size of data item
-    void *reduce_init; // data initialization routine
-    void *reduce_fini; // data finalization routine
-    void *reduce_comb; // data combiner routine
-    kmp_task_red_flags_t flags; // flags for additional info from compiler
-} kmp_task_red_input_t;
-
 void *__kmpc_task_reduction_init(int gtid, int num, void *data) {
     auto thread = hpx_backend->get_task_data();
     kmp_taskgroup_t *tg = thread->td_taskgroup;
@@ -335,7 +308,7 @@ void *__kmpc_task_reduction_get_th_data(int gtid, void *tskgrp, void *data) {
 
 // Finalize task reduction.
 // Called from __kmpc_end_taskgroup()
-static void __kmp_task_reduction_fini(void *thr, kmp_taskgroup_t *tg) {
+void __kmp_task_reduction_fini(void *thr, kmp_taskgroup_t *tg) {
     auto th = hpx_backend->get_task_data();
     kmp_int32 nth = th->team->num_threads;
     kmp_task_red_data_t *arr = (kmp_task_red_data_t *)tg->reduce_data;
@@ -371,14 +344,9 @@ static void __kmp_task_reduction_fini(void *thr, kmp_taskgroup_t *tg) {
     tg->reduce_data = NULL;
     tg->reduce_num_data = 0;
 }
+#endif
 
 void __kmpc_taskgroup( ident_t* loc, int gtid ) {
-    auto task_data = hpx_backend->get_task_data();
-    kmp_taskgroup_t *tg_new =
-            (kmp_taskgroup_t *)new char[sizeof(kmp_taskgroup_t)];
-    tg_new->reduce_data = NULL;
-    tg_new->reduce_num_data = 0;
-    task_data->td_taskgroup = tg_new;
     if( hpx_backend->start_taskgroup() ) {
         #if defined DEBUG && defined HPXMP_HAVE_TRACE
                 std::cout<<"__kmpc_taskgroup"<<std::endl;
@@ -423,10 +391,6 @@ void __kmpc_end_taskgroup( ident_t* loc, int gtid ) {
     }
 #endif
     hpx_backend->end_taskgroup();
-    auto task_data = hpx_backend->get_task_data();
-    kmp_taskgroup_t *taskgroup = task_data->td_taskgroup;
-    if (taskgroup->reduce_data != NULL) // need to reduce?
-        __kmp_task_reduction_fini(nullptr,taskgroup);
     /*
     while( *(hpx_backend->get_task_data()->num_taskgroup_tasks) > 0 ) {
         hpx::this_thread::yield();

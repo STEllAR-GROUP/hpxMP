@@ -224,6 +224,13 @@ void hpx_runtime::barrier_wait(){
 bool hpx_runtime::start_taskgroup()
 {
     auto task = get_task_data();
+#if HPXMP_HAVE_OMP_50_ENABLED
+    kmp_taskgroup_t *tg_new =
+            (kmp_taskgroup_t *)new char[sizeof(kmp_taskgroup_t)];
+    tg_new->reduce_data = NULL;
+    tg_new->reduce_num_data = 0;
+    task->td_taskgroup = tg_new;
+#endif
     task->in_taskgroup = true;
 #ifdef OMP_COMPLIANT
     //FIXME: why is this local_thread_num? shouldn't it be team->num_threads
@@ -245,6 +252,12 @@ void hpx_runtime::end_taskgroup()
     task->taskgroupLatch.reset();
 #endif
     task->in_taskgroup = false;
+
+#if HPXMP_HAVE_OMP_50_ENABLED
+    kmp_taskgroup_t *taskgroup = task->td_taskgroup;
+    if (taskgroup->reduce_data != NULL) // need to reduce?
+        __kmp_task_reduction_fini(nullptr,taskgroup);
+#endif
 }
 
 void hpx_runtime::task_wait()
