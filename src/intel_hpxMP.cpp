@@ -211,40 +211,40 @@ void *__kmpc_task_reduction_init(int gtid, int num, void *data) {
     kmp_taskgroup_t *tg = thread->td_taskgroup;
     int nth = thread->team->num_threads;
     kmp_task_red_input_t *input = (kmp_task_red_input_t *)data;
-    kmp_task_red_data_t *arr;
 
     if (nth == 1) {
         return (void *)tg;
     }
-    arr = (kmp_task_red_data_t *)(new char[num * sizeof(kmp_task_red_data_t)]);
+    shared_ptr<vector<kmp_task_red_data_t>> arr(new(vector<kmp_task_red_data_t>));
+    arr->reserve(num);
     for (int i = 0; i < num; ++i) {
         void (*f_init)(void *) = (void (*)(void *))(input[i].reduce_init);
         size_t size = input[i].reduce_size - 1;
         // round the size up to cache line per thread-specific item
         size += 64 - size % 64;
-        arr[i].reduce_shar = input[i].reduce_shar;
-        arr[i].reduce_size = size;
-        arr[i].reduce_init = input[i].reduce_init;
-        arr[i].reduce_fini = input[i].reduce_fini;
-        arr[i].reduce_comb = input[i].reduce_comb;
-        arr[i].flags = input[i].flags;
+        (*arr)[i].reduce_shar = input[i].reduce_shar;
+        (*arr)[i].reduce_size = size;
+        (*arr)[i].reduce_init = input[i].reduce_init;
+        (*arr)[i].reduce_fini = input[i].reduce_fini;
+        (*arr)[i].reduce_comb = input[i].reduce_comb;
+        (*arr)[i].flags = input[i].flags;
         if (!input[i].flags.lazy_priv) {
             // allocate cache-line aligned block and fill it with zeros
-            arr[i].reduce_priv = new char[nth * size];
-            arr[i].reduce_pend = (char *)(arr[i].reduce_priv) + nth * size;
+            (*arr)[i].reduce_priv = new char[nth * size];
+            (*arr)[i].reduce_pend = (char *)((*arr)[i].reduce_priv) + nth * size;
             if (f_init != NULL) {
                 // initialize thread-specific items
                 for (int j = 0; j < nth; ++j) {
-                    f_init((char *)(arr[i].reduce_priv) + j * size);
+                    f_init((char *)((*arr)[i].reduce_priv) + j * size);
                 }
             }
         } else {
             // only allocate space for pointers now,
             // objects will be lazily allocated/initialized once requested
-            arr[i].reduce_priv = new char[nth * sizeof(void *)];
+            (*arr)[i].reduce_priv = new char[nth * sizeof(void *)];
         }
     }
-    tg->reduce_data = (void *)arr;
+    tg->reduce_data = arr;
     tg->reduce_num_data = num;
     return (void *)tg;
 }
@@ -267,20 +267,20 @@ void *__kmpc_task_reduction_get_th_data(int gtid, void *tskgrp, void *data) {
     kmp_taskgroup_t *tg = (kmp_taskgroup_t *)tskgrp;
     if (tg == NULL)
         tg = thread->td_taskgroup;
-    kmp_task_red_data_t *arr = (kmp_task_red_data_t *)(tg->reduce_data);
+    shared_ptr<vector<kmp_task_red_data_t>> arr = tg->reduce_data;
     kmp_int32 num = tg->reduce_num_data;
     kmp_int32 tid = gtid;
 
     while (tg != NULL) {
         for (int i = 0; i < num; ++i) {
-            if (!arr[i].flags.lazy_priv) {
-                if (data == arr[i].reduce_shar ||
-                    (data >= arr[i].reduce_priv && data < arr[i].reduce_pend))
-                    return (char *)(arr[i].reduce_priv) + tid * arr[i].reduce_size;
+            if (!(*arr)[i].flags.lazy_priv) {
+                if (data == (*arr)[i].reduce_shar ||
+                    (data >= (*arr)[i].reduce_priv && data < (*arr)[i].reduce_pend))
+                    return (char *)((*arr)[i].reduce_priv) + tid * (*arr)[i].reduce_size;
             } else {
                 // check shared location first
-                void **p_priv = (void **)(arr[i].reduce_priv);
-                if (data == arr[i].reduce_shar)
+                void **p_priv = (void **)((*arr)[i].reduce_priv);
+                if (data == (*arr)[i].reduce_shar)
                     goto found;
                 // check if we get some thread specific location as parameter
                 for (int j = 0; j < nth; ++j)
@@ -290,8 +290,8 @@ void *__kmpc_task_reduction_get_th_data(int gtid, void *tskgrp, void *data) {
                 found:
                 if (p_priv[tid] == NULL) {
                     // allocate thread specific object lazily
-                    void (*f_init)(void *) = (void (*)(void *))(arr[i].reduce_init);
-                    p_priv[tid] = new char[arr[i].reduce_size];
+                    void (*f_init)(void *) = (void (*)(void *))((*arr)[i].reduce_init);
+                    p_priv[tid] = new char[(*arr)[i].reduce_size];
                     if (f_init != NULL) {
                         f_init(p_priv[tid]);
                     }
@@ -300,7 +300,7 @@ void *__kmpc_task_reduction_get_th_data(int gtid, void *tskgrp, void *data) {
             }
         }
         tg = tg->parent;
-        arr = (kmp_task_red_data_t *)(tg->reduce_data);
+        arr = tg->reduce_data;
         num = tg->reduce_num_data;
     }
     return NULL; // ERROR, this line never executed
@@ -311,16 +311,16 @@ void *__kmpc_task_reduction_get_th_data(int gtid, void *tskgrp, void *data) {
 void __kmp_task_reduction_fini(void *thr, kmp_taskgroup_t *tg) {
     auto th = hpx_backend->get_task_data();
     kmp_int32 nth = th->team->num_threads;
-    kmp_task_red_data_t *arr = (kmp_task_red_data_t *)tg->reduce_data;
+    shared_ptr<vector<kmp_task_red_data_t>> arr = tg->reduce_data;
     kmp_int32 num = tg->reduce_num_data;
     for (int i = 0; i < num; ++i) {
-        void *sh_data = arr[i].reduce_shar;
-        void (*f_fini)(void *) = (void (*)(void *))(arr[i].reduce_fini);
+        void *sh_data = (*arr)[i].reduce_shar;
+        void (*f_fini)(void *) = (void (*)(void *))((*arr)[i].reduce_fini);
         void (*f_comb)(void *, void *) =
-        (void (*)(void *, void *))(arr[i].reduce_comb);
-        if (!arr[i].flags.lazy_priv) {
-            void *pr_data = arr[i].reduce_priv;
-            size_t size = arr[i].reduce_size;
+        (void (*)(void *, void *))((*arr)[i].reduce_comb);
+        if (!(*arr)[i].flags.lazy_priv) {
+            void *pr_data = (*arr)[i].reduce_priv;
+            size_t size = (*arr)[i].reduce_size;
             for (int j = 0; j < nth; ++j) {
                 void *priv_data = (char *)pr_data + j * size;
                 f_comb(sh_data, priv_data); // combine results
@@ -328,7 +328,7 @@ void __kmp_task_reduction_fini(void *thr, kmp_taskgroup_t *tg) {
                     f_fini(priv_data); // finalize if needed
             }
         } else {
-            void **pr_data = (void **)(arr[i].reduce_priv);
+            void **pr_data = (void **)((*arr)[i].reduce_priv);
             for (int j = 0; j < nth; ++j) {
                 if (pr_data[j] != NULL) {
                     f_comb(sh_data, pr_data[j]); // combine results
@@ -338,9 +338,7 @@ void __kmp_task_reduction_fini(void *thr, kmp_taskgroup_t *tg) {
                 }
             }
         }
-        delete(arr[i].reduce_priv);
     }
-    delete(th, arr);
     tg->reduce_data = NULL;
     tg->reduce_num_data = 0;
 }

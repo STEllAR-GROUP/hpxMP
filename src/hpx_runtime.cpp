@@ -225,9 +225,7 @@ bool hpx_runtime::start_taskgroup()
 {
     auto task = get_task_data();
 #if HPXMP_HAVE_OMP_50_ENABLED
-    kmp_taskgroup_t *tg_new =
-            (kmp_taskgroup_t *)new char[sizeof(kmp_taskgroup_t)];
-    tg_new->reduce_data = NULL;
+    kmp_taskgroup_t *tg_new = new kmp_taskgroup_t();
     tg_new->reduce_num_data = 0;
     task->td_taskgroup = tg_new;
 #endif
