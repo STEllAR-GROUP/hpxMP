@@ -354,11 +354,9 @@ void hpx_runtime::create_task( kmp_routine_entry_t task_func, int gtid, intrusiv
         //count up number of task in taskgroup if we are under taskgroup construct
         if(current_task_ptr->in_taskgroup)
             current_task_ptr->taskgroupLatch->count_up(1);
-        //this fixes hpx::apply changes in hpx backend
-        hpx::applier::register_thread_nullary(
-            std::bind(&task_setup, gtid, kmp_task_ptr, current_task_ptr),
-            "omp_explicit_task", hpx::threads::pending, true,
-            hpx::threads::thread_priority_normal);
+
+        intrusive_ptr<task_wrapper> task_data_wrapper(new task_wrapper(gtid, kmp_task_ptr, current_task_ptr));
+        current_task_ptr->team->pool.submit(task_data_wrapper);
 #endif
     }
 //    else {
@@ -595,7 +593,7 @@ void fork_worker( invoke_func kmp_invoke, microtask_t thread_func,
                   intrusive_ptr<omp_task_data> parent)
 {
     parallel_region team(parent->team, parent->threads_requested);
-
+    team.pool.create_pool(parent->threads_requested);
 #if HPXMP_HAVE_OMPT
     //TODO:HOW TO FIND OUT INVOKER
     ompt_invoker_t a = ompt_invoker_runtime;
@@ -620,7 +618,7 @@ void fork_worker( invoke_func kmp_invoke, microtask_t thread_func,
                 std::bind( &thread_setup, kmp_invoke, thread_func, argc, argv, i, &team, parent,
                            boost::ref(threadLatch)),
                 "omp_implicit_task", hpx::threads::pending,
-                true, hpx::threads::thread_priority_low, i );
+                true, hpx::threads::thread_priority_normal, i );
                 //true, hpx::threads::thread_priority_normal, i );
     }
     threadLatch.count_down_and_wait();

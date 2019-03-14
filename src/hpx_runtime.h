@@ -28,6 +28,7 @@
 #include <boost/assign/std/vector.hpp>
 #include <boost/cstdint.hpp>
 #include <boost/intrusive_ptr.hpp>
+#include <boost/lockfree/queue.hpp>
 //#include <boost/thread/mutex.hpp>
 //#include <boost/thread/condition.hpp>
 
@@ -48,6 +49,7 @@ using hpx::lcos::future;
 using std::vector;
 using hpx::util::high_resolution_timer;
 using boost::intrusive_ptr;
+using boost::lockfree::queue;
 
 
 typedef void (*microtask_t)( int *gtid, int *npr, ... );
@@ -177,13 +179,122 @@ class loop_data {
         std::vector<int> iter_count;
 };
 
+struct omp_task_data;
+//struct thread_pool{
+//    typedef void(*func_type)(int, intrusive_ptr<kmp_task_t>, intrusive_ptr<omp_task_data>);
+//    std::atomic_bool done;
+//    queue<void*,boost::lockfree::capacity<50>> work_queue;
+//
+//    template<typename T>
+//    void submit(T function){
+//        std::cerr<<typeid(T).name()<<std::endl;
+//        void* func_ptr = new T(function);
+//        T* real_ptr = reinterpret_cast<T*>(func_ptr);
+//        T real_func = *real_ptr;
+//        real_func();
+//        //work_queue.push(func_ptr);
+//    }
+//
+//    void worker_thread(){
+//        while(!done){
+//            void* task = nullptr;
+//            if(work_queue.pop(task)){
+//                reinterpret_cast<void(*)()>(task)();
+//            }else{
+//                hpx::this_thread::yield();
+//            }
+//        }
+//    }
+//    thread_pool(int num_threads):done(false){
+//    }
+//
+//    void create_pool(int num_threads){
+//        for( int i = 0; i < num_threads; i++ ) {
+//            hpx::applier::register_thread_nullary(
+//                    std::bind(&thread_pool::worker_thread,this),
+//                    "omp_implicit_task", hpx::threads::pending,
+//                    true, hpx::threads::thread_priority_low, i );
+//        }
+//    }
+//    ~thread_pool(){
+//        done = true;
+//    }
+//};
+void task_setup( int, intrusive_ptr<kmp_task_t>, intrusive_ptr<omp_task_data>);
+
+struct task_wrapper{
+    task_wrapper(int gtid, intrusive_ptr<kmp_task_t> kmp_task_ptr, intrusive_ptr<omp_task_data> parent_task_ptr):pointer_counter(0){
+        this->gtid = gtid;
+        this->kmp_task_ptr = kmp_task_ptr;
+        this->parent_task_ptr = parent_task_ptr;
+    }
+    int gtid;
+    intrusive_ptr<kmp_task_t> kmp_task_ptr;
+    intrusive_ptr<omp_task_data> parent_task_ptr;
+    atomic<int> pointer_counter;
+};
+inline void intrusive_ptr_add_ref(task_wrapper *x)
+{
+    ++x->pointer_counter;
+}
+
+inline void intrusive_ptr_release(task_wrapper *x)
+{
+    if (x->pointer_counter == 0)
+        delete x;
+}
+struct thread_pool{
+    std::atomic_bool done;
+    queue<task_wrapper*,boost::lockfree::capacity<50>> work_queue;
+    latch pool_latch;
+    bool is_created = false;
+
+    void submit(intrusive_ptr<task_wrapper> data){
+        intrusive_ptr_add_ref(data.get());
+        work_queue.push(data.get());
+    }
+
+    void worker_thread(){
+        while(!done){
+            task_wrapper* task = nullptr;
+            if(work_queue.pop(task)){
+                task_setup(task->gtid, task->kmp_task_ptr,task->parent_task_ptr);
+                intrusive_ptr_release(task);
+            }else{
+                hpx::this_thread::yield();
+            }
+        }
+        pool_latch.count_down(1);
+    }
+    thread_pool(int num_threads):done(false),pool_latch(num_threads){
+    }
+
+    void create_pool(int num_threads){
+        is_created = true;
+        for( int i = 0; i < num_threads; i++ ) {
+            hpx::applier::register_thread_nullary(
+                    std::bind(&thread_pool::worker_thread,this),
+                    "omp_implicit_task", hpx::threads::pending,
+                    true, hpx::threads::thread_priority_low, i );
+        }
+    }
+    ~thread_pool(){
+        if(is_created) {
+            done = true;
+            pool_latch.wait();
+        }else{
+            pool_latch.reset(0);
+        }
+    }
+};
+
 //Does this need to keep track of the parallel region it is nested in,
 // the omp_task_data of the parent thread, or both?
 //template<typename scheduler>
 struct parallel_region {
 
     parallel_region( int N ) : num_threads(N), globalBarrier(N),
-                               depth(0), reduce_data(N), teamTaskLatch(0)
+                               depth(0), reduce_data(N), teamTaskLatch(0),pool(N)
     {};
 
     parallel_region( parallel_region *parent, int threads_requested ) : parallel_region(threads_requested)
@@ -208,6 +319,7 @@ struct parallel_region {
     vector<loop_data> loop_list;
     mutex_type loop_mtx;
     latch teamTaskLatch;
+    thread_pool pool;
 #if (HPXMP_HAVE_OMPT)
     ompt_data_t parent_data = ompt_data_none;
     ompt_data_t parallel_data = ompt_data_none;
