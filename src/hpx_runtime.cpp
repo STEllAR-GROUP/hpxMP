@@ -226,7 +226,7 @@ bool hpx_runtime::start_taskgroup()
 {
     auto task = get_task_data();
 #if HPXMP_HAVE_OMP_50_ENABLED
-    kmp_taskgroup_t *tg_new = new kmp_taskgroup_t();
+    intrusive_ptr<kmp_taskgroup_t> tg_new(new kmp_taskgroup_t());
     tg_new->reduce_num_data = 0;
     task->td_taskgroup = tg_new;
 #endif
@@ -252,7 +252,7 @@ void hpx_runtime::end_taskgroup()
     task->in_taskgroup = false;
 
 #if HPXMP_HAVE_OMP_50_ENABLED
-    kmp_taskgroup_t *taskgroup = task->td_taskgroup;
+    auto taskgroup = task->td_taskgroup;
     if (taskgroup->reduce_data != NULL) // need to reduce?
         __kmp_task_reduction_fini(nullptr,taskgroup);
 #endif
@@ -595,7 +595,6 @@ void fork_worker( invoke_func kmp_invoke, microtask_t thread_func,
                   intrusive_ptr<omp_task_data> parent)
 {
     parallel_region team(parent->team, parent->threads_requested);
-
 #if HPXMP_HAVE_OMPT
     //TODO:HOW TO FIND OUT INVOKER
     ompt_invoker_t a = ompt_invoker_runtime;

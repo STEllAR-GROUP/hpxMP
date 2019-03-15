@@ -135,7 +135,20 @@ struct kmp_taskgroup_t {
     // Block of data to perform task reduction
     shared_ptr<vector<kmp_task_red_data_t>> reduce_data; // reduction related info
     int reduce_num_data; // number of data items to reduce
+    atomic<int> pointer_counter;
 };
+
+inline void intrusive_ptr_add_ref(kmp_taskgroup_t *x)
+{
+    ++x->pointer_counter;
+}
+
+inline void intrusive_ptr_release(kmp_taskgroup_t *x)
+{
+    if (x->pointer_counter == 0)
+        delete x;
+}
+
 #endif
 
 class loop_data {
@@ -291,7 +304,7 @@ class omp_task_data {
         omp_icv icv;
         depends_map df_map;
 #if HPXMP_HAVE_OMP_50_ENABLED
-        kmp_taskgroup_t* td_taskgroup;
+        intrusive_ptr<kmp_taskgroup_t> td_taskgroup;
 #endif
 };
 

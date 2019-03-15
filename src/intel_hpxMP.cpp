@@ -208,12 +208,12 @@ kmp_int32 __kmpc_omp_taskyield(ident_t *loc_ref, kmp_int32 gtid, int end_part ){
 // Task Reduction implementation
 void *__kmpc_task_reduction_init(int gtid, int num, void *data) {
     auto thread = hpx_backend->get_task_data();
-    kmp_taskgroup_t *tg = thread->td_taskgroup;
+    intrusive_ptr<kmp_taskgroup_t> tg = thread->td_taskgroup;
     int nth = thread->team->num_threads;
     kmp_task_red_input_t *input = (kmp_task_red_input_t *)data;
 
     if (nth == 1) {
-        return (void *)tg;
+        return (void *)tg.get();
     }
     shared_ptr<vector<kmp_task_red_data_t>> arr(new(vector<kmp_task_red_data_t>));
     arr->reserve(num);
@@ -246,7 +246,7 @@ void *__kmpc_task_reduction_init(int gtid, int num, void *data) {
     }
     tg->reduce_data = arr;
     tg->reduce_num_data = num;
-    return (void *)tg;
+    return (void *)tg.get();
 }
 
 /*!
@@ -264,7 +264,7 @@ void *__kmpc_task_reduction_get_th_data(int gtid, void *tskgrp, void *data) {
     if (nth == 1)
         return data; // nothing to do
 
-    kmp_taskgroup_t *tg = (kmp_taskgroup_t *)tskgrp;
+    intrusive_ptr<kmp_taskgroup_t> tg = (kmp_taskgroup_t*)tskgrp;
     if (tg == NULL)
         tg = thread->td_taskgroup;
     shared_ptr<vector<kmp_task_red_data_t>> arr = tg->reduce_data;
@@ -308,7 +308,7 @@ void *__kmpc_task_reduction_get_th_data(int gtid, void *tskgrp, void *data) {
 
 // Finalize task reduction.
 // Called from __kmpc_end_taskgroup()
-void __kmp_task_reduction_fini(void *thr, kmp_taskgroup_t *tg) {
+void __kmp_task_reduction_fini(void *thr, intrusive_ptr<kmp_taskgroup_t> tg) {
     auto th = hpx_backend->get_task_data();
     kmp_int32 nth = th->team->num_threads;
     shared_ptr<vector<kmp_task_red_data_t>> arr = tg->reduce_data;
