@@ -22,6 +22,7 @@ int main(int argc, char **argv)
             {
                 printf("this is task 2\n");
             }
+#pragma omp taskwait
         }
     }
     return 0;

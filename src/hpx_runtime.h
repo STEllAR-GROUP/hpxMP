@@ -244,10 +244,11 @@ inline void intrusive_ptr_release(task_wrapper *x)
         delete x;
 }
 struct thread_pool{
+    int pool_size;
     std::atomic_bool done;
     queue<task_wrapper*,boost::lockfree::capacity<50>> work_queue;
     latch pool_latch;
-    bool is_created = false;
+    bool is_created;
 
     void submit(intrusive_ptr<task_wrapper> data){
         intrusive_ptr_add_ref(data.get());
@@ -266,12 +267,12 @@ struct thread_pool{
         }
         pool_latch.count_down(1);
     }
-    thread_pool(int num_threads):done(false),pool_latch(num_threads){
+    thread_pool(int num_threads):done(false),pool_latch(num_threads),pool_size(num_threads),is_created(false){
     }
 
-    void create_pool(int num_threads){
+    void create_pool(){
         is_created = true;
-        for( int i = 0; i < num_threads; i++ ) {
+        for( int i = 0; i < pool_size; i++ ) {
             hpx::applier::register_thread_nullary(
                     std::bind(&thread_pool::worker_thread,this),
                     "omp_implicit_task", hpx::threads::pending,

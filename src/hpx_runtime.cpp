@@ -355,6 +355,9 @@ void hpx_runtime::create_task( kmp_routine_entry_t task_func, int gtid, intrusiv
         if(current_task_ptr->in_taskgroup)
             current_task_ptr->taskgroupLatch->count_up(1);
 
+        if(!current_task_ptr->team->pool.is_created){
+            current_task_ptr->team->pool.create_pool();
+        }
         intrusive_ptr<task_wrapper> task_data_wrapper(new task_wrapper(gtid, kmp_task_ptr, current_task_ptr));
         current_task_ptr->team->pool.submit(task_data_wrapper);
 #endif
@@ -593,7 +596,6 @@ void fork_worker( invoke_func kmp_invoke, microtask_t thread_func,
                   intrusive_ptr<omp_task_data> parent)
 {
     parallel_region team(parent->team, parent->threads_requested);
-    team.pool.create_pool(parent->threads_requested);
 #if HPXMP_HAVE_OMPT
     //TODO:HOW TO FIND OUT INVOKER
     ompt_invoker_t a = ompt_invoker_runtime;
