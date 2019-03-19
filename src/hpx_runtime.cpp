@@ -225,6 +225,11 @@ void hpx_runtime::barrier_wait(){
 bool hpx_runtime::start_taskgroup()
 {
     auto task = get_task_data();
+#if HPXMP_HAVE_OMP_50_ENABLED
+    intrusive_ptr<kmp_taskgroup_t> tg_new(new kmp_taskgroup_t());
+    tg_new->reduce_num_data = 0;
+    task->td_taskgroup = tg_new;
+#endif
     task->in_taskgroup = true;
 #ifdef OMP_COMPLIANT
     //FIXME: why is this local_thread_num? shouldn't it be team->num_threads
@@ -245,6 +250,12 @@ void hpx_runtime::end_taskgroup()
     task->taskgroupLatch->count_down_and_wait();
 #endif
     task->in_taskgroup = false;
+
+#if HPXMP_HAVE_OMP_50_ENABLED
+    auto taskgroup = task->td_taskgroup;
+    if (taskgroup->reduce_data != NULL) // need to reduce?
+        __kmp_task_reduction_fini(nullptr,taskgroup);
+#endif
 }
 
 void hpx_runtime::task_wait()
@@ -254,9 +265,9 @@ void hpx_runtime::task_wait()
     task_ptr->taskLatch.wait();
 }
 
-void task_setup( int gtid, kmp_task_t *task, intrusive_ptr<omp_task_data> parent_task_ptr)
+void task_setup( int gtid, intrusive_ptr<kmp_task_t> kmp_task_ptr, intrusive_ptr<omp_task_data> parent_task_ptr)
 {
-    auto task_func = task->routine;
+    auto task_func = kmp_task_ptr->routine;
     intrusive_ptr current_task_ptr(new omp_task_data(gtid, parent_task_ptr->team, parent_task_ptr->icv));
     set_thread_data( get_self_id(), reinterpret_cast<size_t>(current_task_ptr.get()));
 #if HPXMP_HAVE_OMPT
@@ -277,16 +288,15 @@ void task_setup( int gtid, kmp_task_t *task, intrusive_ptr<omp_task_data> parent
     }
 #endif
     // actually running the taskfunctions
-if(! task->gcc)
-    task_func(gtid, task);
+if(! kmp_task_ptr->gcc)
+    task_func(gtid, kmp_task_ptr.get());
 else
-    ((void (*)(void *))(*(task->routine)))(task->shareds);
+    ((void (*)(void *))(*(kmp_task_ptr->routine)))(kmp_task_ptr->shareds);
 #ifndef OMP_COMPLIANT
     //count down number of tasks under team
     current_task_ptr->team->teamTaskLatch.count_down(1);
 #endif
-    if(task->part_id ==0)
-        delete[] (char*)task;
+
 #if HPXMP_HAVE_OMPT
     ompt_task_status_t status_fin = ompt_task_complete;
     /* let OMPT know that we're returning to the callee task */
@@ -322,7 +332,7 @@ void tg_task_setup( int gtid, kmp_task_t *task, omp_icv icv,
 
 //shared_ptr is used for these counters, because the parent/calling task may terminate at any time,
 //causing its omp_task_data to be deallocated.
-void hpx_runtime::create_task( kmp_routine_entry_t task_func, int gtid, kmp_task_t *thunk)
+void hpx_runtime::create_task( kmp_routine_entry_t task_func, int gtid, intrusive_ptr<kmp_task_t> kmp_task_ptr)
 {
     auto current_task_ptr = get_task_data();
     if(current_task_ptr->team->num_threads > 0) {
@@ -346,7 +356,7 @@ void hpx_runtime::create_task( kmp_routine_entry_t task_func, int gtid, kmp_task
             current_task_ptr->taskgroupLatch->count_up(1);
         //this fixes hpx::apply changes in hpx backend
         hpx::applier::register_thread_nullary(
-            std::bind(&task_setup, gtid, thunk, current_task_ptr),
+            std::bind(&task_setup, gtid, kmp_task_ptr, current_task_ptr),
             "omp_explicit_task", hpx::threads::pending, true,
             hpx::threads::thread_priority_normal);
 #endif
@@ -585,7 +595,6 @@ void fork_worker( invoke_func kmp_invoke, microtask_t thread_func,
                   intrusive_ptr<omp_task_data> parent)
 {
     parallel_region team(parent->team, parent->threads_requested);
-
 #if HPXMP_HAVE_OMPT
     //TODO:HOW TO FIND OUT INVOKER
     ompt_invoker_t a = ompt_invoker_runtime;

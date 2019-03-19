@@ -67,15 +67,27 @@ typedef int (* kmp_routine_entry_t)( int, void * );
 
 typedef std::map<int64_t, hpx::shared_future<void>> depends_map;
 
-typedef struct kmp_task {
+struct kmp_task_t {
     void *              shareds;
     kmp_routine_entry_t routine;
     int                 part_id;
     bool                gcc;
+    atomic<int> pointer_counter;
 #if OMP_40_ENABLED
     kmp_routine_entry_t destructors;
 #endif
-} kmp_task_t;
+};
+
+inline void intrusive_ptr_add_ref(kmp_task_t *x)
+{
+    ++x->pointer_counter;
+}
+
+inline void intrusive_ptr_release(kmp_task_t *x)
+{
+    if (x->pointer_counter == 0)
+        delete x;
+}
 
 
 typedef struct kmp_depend_info {
@@ -86,6 +98,58 @@ typedef struct kmp_depend_info {
         bool  out:1;
     } flags;
 } kmp_depend_info_t;
+
+#if HPXMP_HAVE_OMP_50_ENABLED
+struct kmp_task_red_flags_t {
+    unsigned lazy_priv : 1; // hint: (1) use lazy allocation (big objects)
+    unsigned reserved31 : 31;
+};
+
+// internal structure for reduction data item related info
+struct kmp_task_red_data_t {
+    void *reduce_shar; // shared reduction item
+    size_t reduce_size; // size of data item
+    void *reduce_priv; // thread specific data
+    void *reduce_pend; // end of private data for comparison op
+    void *reduce_init; // data initialization routine
+    void *reduce_fini; // data finalization routine
+    void *reduce_comb; // data combiner routine
+    kmp_task_red_flags_t flags; // flags for additional info from compiler
+};
+
+// structure sent us by compiler - one per reduction item
+struct kmp_task_red_input_t {
+    void *reduce_shar; // shared reduction item
+    size_t reduce_size; // size of data item
+    void *reduce_init; // data initialization routine
+    void *reduce_fini; // data finalization routine
+    void *reduce_comb; // data combiner routine
+    kmp_task_red_flags_t flags; // flags for additional info from compiler
+};
+
+struct kmp_taskgroup_t {
+    std::atomic<int> count; // number of allocated and incomplete tasks
+    std::atomic<int>
+            cancel_request; // request for cancellation of this taskgroup
+     kmp_taskgroup_t* parent; // parent taskgroup
+    // Block of data to perform task reduction
+    shared_ptr<vector<kmp_task_red_data_t>> reduce_data; // reduction related info
+    int reduce_num_data; // number of data items to reduce
+    atomic<int> pointer_counter;
+};
+
+inline void intrusive_ptr_add_ref(kmp_taskgroup_t *x)
+{
+    ++x->pointer_counter;
+}
+
+inline void intrusive_ptr_release(kmp_taskgroup_t *x)
+{
+    if (x->pointer_counter == 0)
+        delete x;
+}
+
+#endif
 
 class loop_data {
     public:
@@ -239,6 +303,9 @@ class omp_task_data {
 
         omp_icv icv;
         depends_map df_map;
+#if HPXMP_HAVE_OMP_50_ENABLED
+        intrusive_ptr<kmp_taskgroup_t> td_taskgroup;
+#endif
 };
 
 inline void intrusive_ptr_add_ref(omp_task_data *x)
@@ -271,7 +338,7 @@ class hpx_runtime {
         void barrier_wait();
         void create_task( omp_task_func taskfunc, void *frame_pointer,
                           void *firstprivates, int is_tied, int blocks_parent);
-        void create_task( kmp_routine_entry_t taskfunc, int gtid, kmp_task_t *task);
+        void create_task( kmp_routine_entry_t taskfunc, int gtid, intrusive_ptr<kmp_task_t> task);
         void create_df_task( int gtid, kmp_task_t *thunk,
                              int ndeps, kmp_depend_info_t *dep_list,
                              int ndeps_noalias, kmp_depend_info_t *noalias_dep_list );

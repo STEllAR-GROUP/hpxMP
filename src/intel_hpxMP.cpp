@@ -92,12 +92,13 @@ __kmpc_omp_task_alloc( ident_t *loc_ref, kmp_int32 gtid, kmp_int32 flags,
     //kmp_tasking_flags_t *input_flags = (kmp_tasking_flags_t *) & flags;
     //TODO: do I need to do something with these flags?
     int task_size = sizeof_kmp_task_t + (-sizeof_kmp_task_t%8);
-
+    //can be sure that no deletion of task happens here, no need of intrusive ptr
     kmp_task_t *task = (kmp_task_t*)new char[task_size + sizeof_shareds]; 
 
     //This gets deleted at the end of task_setup
     task->routine = task_entry;
     task->gcc = false;
+    task->pointer_counter = 0;
     if( sizeof_shareds == 0 ) {
         task->shareds = NULL;
     } else {
@@ -112,7 +113,8 @@ int __kmpc_omp_task( ident_t *loc_ref, kmp_int32 gtid, kmp_task_t * new_task){
         std::cout<<"__kmpc_omp_task"<<std::endl;
     #endif
     start_backend();
-    hpx_backend->create_task(new_task->routine, gtid, new_task);
+    intrusive_ptr new_task_ptr(new_task);
+    hpx_backend->create_task(new_task_ptr->routine, gtid, new_task_ptr);
     return 1;
 }
 
@@ -201,6 +203,146 @@ kmp_int32 __kmpc_omp_taskyield(ident_t *loc_ref, kmp_int32 gtid, int end_part ){
     hpx::this_thread::yield();
     return 0;
 }
+
+#if HPXMP_HAVE_OMP_50_ENABLED
+// Task Reduction implementation
+void *__kmpc_task_reduction_init(int gtid, int num, void *data) {
+    auto thread = hpx_backend->get_task_data();
+    intrusive_ptr<kmp_taskgroup_t> tg = thread->td_taskgroup;
+    int nth = thread->team->num_threads;
+    kmp_task_red_input_t *input = (kmp_task_red_input_t *)data;
+
+    if (nth == 1) {
+        return (void *)tg.get();
+    }
+    shared_ptr<vector<kmp_task_red_data_t>> arr(new(vector<kmp_task_red_data_t>));
+    arr->reserve(num);
+    for (int i = 0; i < num; ++i) {
+        void (*f_init)(void *) = (void (*)(void *))(input[i].reduce_init);
+        size_t size = input[i].reduce_size - 1;
+        // round the size up to cache line per thread-specific item
+        size += 64 - size % 64;
+        (*arr)[i].reduce_shar = input[i].reduce_shar;
+        (*arr)[i].reduce_size = size;
+        (*arr)[i].reduce_init = input[i].reduce_init;
+        (*arr)[i].reduce_fini = input[i].reduce_fini;
+        (*arr)[i].reduce_comb = input[i].reduce_comb;
+        (*arr)[i].flags = input[i].flags;
+        if (!input[i].flags.lazy_priv) {
+            // allocate cache-line aligned block and fill it with zeros
+            (*arr)[i].reduce_priv = new char[nth * size];
+            (*arr)[i].reduce_pend = (char *)((*arr)[i].reduce_priv) + nth * size;
+            if (f_init != NULL) {
+                // initialize thread-specific items
+                for (int j = 0; j < nth; ++j) {
+                    f_init((char *)((*arr)[i].reduce_priv) + j * size);
+                }
+            }
+        } else {
+            // only allocate space for pointers now,
+            // objects will be lazily allocated/initialized once requested
+            (*arr)[i].reduce_priv = new char[nth * sizeof(void *)];
+        }
+    }
+    tg->reduce_data = arr;
+    tg->reduce_num_data = num;
+    return (void *)tg.get();
+}
+
+/*!
+@ingroup TASKING
+@param gtid    Global thread ID
+@param tskgrp  The taskgroup ID (optional)
+@param data    Shared location of the item
+@return The pointer to per-thread data
+
+Get thread-specific location of data item
+*/
+void *__kmpc_task_reduction_get_th_data(int gtid, void *tskgrp, void *data) {
+    auto thread = hpx_backend->get_task_data();
+    kmp_int32 nth = thread->team->num_threads;
+    if (nth == 1)
+        return data; // nothing to do
+
+    intrusive_ptr<kmp_taskgroup_t> tg = (kmp_taskgroup_t*)tskgrp;
+    if (tg == NULL)
+        tg = thread->td_taskgroup;
+    shared_ptr<vector<kmp_task_red_data_t>> arr = tg->reduce_data;
+    kmp_int32 num = tg->reduce_num_data;
+    kmp_int32 tid = gtid;
+
+    while (tg != NULL) {
+        for (int i = 0; i < num; ++i) {
+            if (!(*arr)[i].flags.lazy_priv) {
+                if (data == (*arr)[i].reduce_shar ||
+                    (data >= (*arr)[i].reduce_priv && data < (*arr)[i].reduce_pend))
+                    return (char *)((*arr)[i].reduce_priv) + tid * (*arr)[i].reduce_size;
+            } else {
+                // check shared location first
+                void **p_priv = (void **)((*arr)[i].reduce_priv);
+                if (data == (*arr)[i].reduce_shar)
+                    goto found;
+                // check if we get some thread specific location as parameter
+                for (int j = 0; j < nth; ++j)
+                    if (data == p_priv[j])
+                        goto found;
+                continue; // not found, continue search
+                found:
+                if (p_priv[tid] == NULL) {
+                    // allocate thread specific object lazily
+                    void (*f_init)(void *) = (void (*)(void *))((*arr)[i].reduce_init);
+                    p_priv[tid] = new char[(*arr)[i].reduce_size];
+                    if (f_init != NULL) {
+                        f_init(p_priv[tid]);
+                    }
+                }
+                return p_priv[tid];
+            }
+        }
+        tg = tg->parent;
+        arr = tg->reduce_data;
+        num = tg->reduce_num_data;
+    }
+    return NULL; // ERROR, this line never executed
+}
+
+// Finalize task reduction.
+// Called from __kmpc_end_taskgroup()
+void __kmp_task_reduction_fini(void *thr, intrusive_ptr<kmp_taskgroup_t> tg) {
+    auto th = hpx_backend->get_task_data();
+    kmp_int32 nth = th->team->num_threads;
+    shared_ptr<vector<kmp_task_red_data_t>> arr = tg->reduce_data;
+    kmp_int32 num = tg->reduce_num_data;
+    for (int i = 0; i < num; ++i) {
+        void *sh_data = (*arr)[i].reduce_shar;
+        void (*f_fini)(void *) = (void (*)(void *))((*arr)[i].reduce_fini);
+        void (*f_comb)(void *, void *) =
+        (void (*)(void *, void *))((*arr)[i].reduce_comb);
+        if (!(*arr)[i].flags.lazy_priv) {
+            void *pr_data = (*arr)[i].reduce_priv;
+            size_t size = (*arr)[i].reduce_size;
+            for (int j = 0; j < nth; ++j) {
+                void *priv_data = (char *)pr_data + j * size;
+                f_comb(sh_data, priv_data); // combine results
+                if (f_fini)
+                    f_fini(priv_data); // finalize if needed
+            }
+        } else {
+            void **pr_data = (void **)((*arr)[i].reduce_priv);
+            for (int j = 0; j < nth; ++j) {
+                if (pr_data[j] != NULL) {
+                    f_comb(sh_data, pr_data[j]); // combine results
+                    if (f_fini)
+                        f_fini(pr_data[j]); // finalize if needed
+                        delete(pr_data[j]);
+                }
+            }
+        }
+    }
+    tg->reduce_data = NULL;
+    tg->reduce_num_data = 0;
+}
+#endif
 
 void __kmpc_taskgroup( ident_t* loc, int gtid ) {
     if( hpx_backend->start_taskgroup() ) {
