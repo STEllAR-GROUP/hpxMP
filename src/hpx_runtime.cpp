@@ -595,6 +595,17 @@ void fork_worker( invoke_func kmp_invoke, microtask_t thread_func,
                   int argc, void **argv,
                   intrusive_ptr<omp_task_data> parent)
 {
+
+    hpx::threads::remove_scheduler_mode(
+            hpx::threads::policies::enable_stealing);
+ 
+//    hpx::threads::remove_scheduler_mode(
+//            hpx::threads::policies::enable_idle_backoff);
+ 
+//    hpx::threads::add_scheduler_mode(
+//            hpx::threads::policies::fast_idle_mode);
+
+
     parallel_region team(parent->team, parent->threads_requested);
 #if HPXMP_HAVE_OMPT
     //TODO:HOW TO FIND OUT INVOKER
@@ -614,13 +625,6 @@ void fork_worker( invoke_func kmp_invoke, microtask_t thread_func,
 #endif
     int running_threads = parent->threads_requested;
     latch threadLatch(running_threads+1);
-
-//    hpx::threads::remove_scheduler_mode(
-//            hpx::threads::policies::enable_stealing);
- 
-//    hpx::threads::add_scheduler_mode(
-//            hpx::threads::policies::fast_idle_mode);
-
     for( int i = 0; i < parent->threads_requested; i++ ) {
         hpx::applier::register_thread_nullary(
                 std::bind( &thread_setup, kmp_invoke, thread_func, argc, argv, i, &team, parent,
