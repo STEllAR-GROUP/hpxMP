@@ -13,6 +13,7 @@
 // being compiled as part of HPX itself
 #include <hpx/hpx_start_impl.hpp>
 #include <hpx/runtime/threads/run_as_hpx_thread.hpp>
+#include <hpx/include/parallel_executor_parameters.hpp>
 
 using std::cout;
 using std::endl;
@@ -614,6 +615,8 @@ void fork_worker( invoke_func kmp_invoke, microtask_t thread_func,
     int running_threads = parent->threads_requested;
     latch threadLatch(running_threads+1);
 
+    hpx::threads::remove_scheduler_mode(
+            hpx::threads::policies::enable_stealing);
     for( int i = 0; i < parent->threads_requested; i++ ) {
         hpx::applier::register_thread_nullary(
                 std::bind( &thread_setup, kmp_invoke, thread_func, argc, argv, i, &team, parent,
