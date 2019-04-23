@@ -596,14 +596,14 @@ void fork_worker( invoke_func kmp_invoke, microtask_t thread_func,
                   intrusive_ptr<omp_task_data> parent)
 {
 
-//    hpx::threads::remove_scheduler_mode(
-//            hpx::threads::policies::enable_stealing);
- 
     hpx::threads::remove_scheduler_mode(
-            hpx::threads::policies::enable_idle_backoff);
+            hpx::threads::policies::enable_stealing);
  
-//    hpx::threads::add_scheduler_mode(
-//            hpx::threads::policies::fast_idle_mode);
+//    hpx::threads::remove_scheduler_mode(
+//            hpx::threads::policies::enable_idle_backoff);
+ 
+    hpx::threads::add_scheduler_mode(
+            hpx::threads::policies::fast_idle_mode);
 
 
     parallel_region team(parent->team, parent->threads_requested);
