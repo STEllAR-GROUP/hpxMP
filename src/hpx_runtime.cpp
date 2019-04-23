@@ -596,8 +596,8 @@ void fork_worker( invoke_func kmp_invoke, microtask_t thread_func,
                   intrusive_ptr<omp_task_data> parent)
 {
 
-    hpx::threads::remove_scheduler_mode(
-            hpx::threads::policies::enable_stealing);
+//    hpx::threads::remove_scheduler_mode(
+//            hpx::threads::policies::enable_stealing);
  
 //    hpx::threads::remove_scheduler_mode(
 //            hpx::threads::policies::enable_idle_backoff);
