@@ -147,11 +147,11 @@ hpx_runtime::hpx_runtime()
         start_hpx(initial_num_threads);
     }
     //scheduler mode sttings
-//    hpx::threads::remove_scheduler_mode(
-//            hpx::threads::policies::enable_stealing);
-//
-//    hpx::threads::remove_scheduler_mode(
-//            hpx::threads::policies::enable_idle_backoff);
+    hpx::threads::remove_scheduler_mode(
+            hpx::threads::policies::enable_stealing);
+
+    hpx::threads::add_scheduler_mode(
+            hpx::threads::policies::enable_idle_backoff);
 
     hpx::threads::add_scheduler_mode(
             hpx::threads::policies::fast_idle_mode);
@@ -631,11 +631,11 @@ void fork_worker( invoke_func kmp_invoke, microtask_t thread_func,
                 true, hpx::threads::thread_priority_low, i );
                 //true, hpx::threads::thread_priority_normal, i );
     }
-        hpx::threads::remove_scheduler_mode(
-            hpx::threads::policies::enable_stealing);
-//
-//    hpx::threads::remove_scheduler_mode(
-//            hpx::threads::policies::enable_idle_backoff);
+    hpx::threads::remove_scheduler_mode(
+        hpx::threads::policies::enable_stealing);
+
+    hpx::threads::add_scheduler_mode(
+            hpx::threads::policies::enable_idle_backoff);
 
     hpx::threads::remove_scheduler_mode(
             hpx::threads::policies::fast_idle_mode);
