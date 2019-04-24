@@ -146,6 +146,15 @@ hpx_runtime::hpx_runtime()
     if(!external_hpx) {
         start_hpx(initial_num_threads);
     }
+    //scheduler mode sttings
+//    hpx::threads::remove_scheduler_mode(
+//            hpx::threads::policies::enable_stealing);
+//
+//    hpx::threads::remove_scheduler_mode(
+//            hpx::threads::policies::enable_idle_backoff);
+
+    hpx::threads::add_scheduler_mode(
+            hpx::threads::policies::fast_idle_mode);
 }
 
 parallel_region* hpx_runtime::get_team()
@@ -595,17 +604,6 @@ void fork_worker( invoke_func kmp_invoke, microtask_t thread_func,
                   int argc, void **argv,
                   intrusive_ptr<omp_task_data> parent)
 {
-
-    hpx::threads::remove_scheduler_mode(
-            hpx::threads::policies::enable_stealing);
- 
-//    hpx::threads::remove_scheduler_mode(
-//            hpx::threads::policies::enable_idle_backoff);
- 
-    hpx::threads::add_scheduler_mode(
-            hpx::threads::policies::fast_idle_mode);
-
-
     parallel_region team(parent->team, parent->threads_requested);
 #if HPXMP_HAVE_OMPT
     //TODO:HOW TO FIND OUT INVOKER
@@ -633,6 +631,15 @@ void fork_worker( invoke_func kmp_invoke, microtask_t thread_func,
                 true, hpx::threads::thread_priority_low, i );
                 //true, hpx::threads::thread_priority_normal, i );
     }
+        hpx::threads::remove_scheduler_mode(
+            hpx::threads::policies::enable_stealing);
+//
+//    hpx::threads::remove_scheduler_mode(
+//            hpx::threads::policies::enable_idle_backoff);
+
+    hpx::threads::remove_scheduler_mode(
+            hpx::threads::policies::fast_idle_mode);
+
     threadLatch.count_down_and_wait();
     // wait for all the tasks in the team to finish
     team.teamTaskLatch.wait();
