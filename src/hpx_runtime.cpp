@@ -147,14 +147,14 @@ hpx_runtime::hpx_runtime()
         start_hpx(initial_num_threads);
     }
     //scheduler mode sttings
-    hpx::threads::remove_scheduler_mode(
-            hpx::threads::policies::enable_stealing);
-
-    hpx::threads::add_scheduler_mode(
-            hpx::threads::policies::enable_idle_backoff);
-
-    hpx::threads::add_scheduler_mode(
-            hpx::threads::policies::fast_idle_mode);
+//    hpx::threads::remove_scheduler_mode(
+//            hpx::threads::policies::enable_stealing);
+//
+//    hpx::threads::add_scheduler_mode(
+//            hpx::threads::policies::enable_idle_backoff);
+//
+//    hpx::threads::add_scheduler_mode(
+//            hpx::threads::policies::fast_idle_mode);
 }
 
 parallel_region* hpx_runtime::get_team()
@@ -623,6 +623,14 @@ void fork_worker( invoke_func kmp_invoke, microtask_t thread_func,
 #endif
     int running_threads = parent->threads_requested;
     latch threadLatch(running_threads+1);
+    hpx::threads::add_scheduler_mode(
+            hpx::threads::policies::enable_stealing);
+
+    hpx::threads::add_scheduler_mode(
+            hpx::threads::policies::enable_idle_backoff);
+
+    hpx::threads::add_scheduler_mode(
+            hpx::threads::policies::fast_idle_mode);
     for( int i = 0; i < parent->threads_requested; i++ ) {
         hpx::applier::register_thread_nullary(
                 std::bind( &thread_setup, kmp_invoke, thread_func, argc, argv, i, &team, parent,
@@ -631,14 +639,6 @@ void fork_worker( invoke_func kmp_invoke, microtask_t thread_func,
                 true, hpx::threads::thread_priority_low, i );
                 //true, hpx::threads::thread_priority_normal, i );
     }
-    hpx::threads::remove_scheduler_mode(
-        hpx::threads::policies::enable_stealing);
-
-    hpx::threads::add_scheduler_mode(
-            hpx::threads::policies::enable_idle_backoff);
-
-    hpx::threads::remove_scheduler_mode(
-            hpx::threads::policies::fast_idle_mode);
 
     threadLatch.count_down_and_wait();
     // wait for all the tasks in the team to finish
@@ -665,14 +665,14 @@ void hpx_runtime::fork(invoke_func kmp_invoke, microtask_t thread_func, int argc
         hpx::threads::run_as_hpx_thread(&fork_worker,kmp_invoke, thread_func, argc, argv,
                                         current_task_ptr);
     }
-    hpx::threads::remove_scheduler_mode(
-            hpx::threads::policies::enable_stealing);
-
-    hpx::threads::add_scheduler_mode(
-            hpx::threads::policies::enable_idle_backoff);
-
-    hpx::threads::add_scheduler_mode(
-            hpx::threads::policies::fast_idle_mode);
-    current_task_ptr->set_threads_requested(current_task_ptr->icv.nthreads );
+//    hpx::threads::remove_scheduler_mode(
+//            hpx::threads::policies::enable_stealing);
+//
+//    hpx::threads::add_scheduler_mode(
+//            hpx::threads::policies::enable_idle_backoff);
+//
+//    hpx::threads::add_scheduler_mode(
+//            hpx::threads::policies::fast_idle_mode);
+//    current_task_ptr->set_threads_requested(current_task_ptr->icv.nthreads );
 }
 
