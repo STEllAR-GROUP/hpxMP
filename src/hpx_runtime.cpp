@@ -665,6 +665,14 @@ void hpx_runtime::fork(invoke_func kmp_invoke, microtask_t thread_func, int argc
         hpx::threads::run_as_hpx_thread(&fork_worker,kmp_invoke, thread_func, argc, argv,
                                         current_task_ptr);
     }
+    hpx::threads::remove_scheduler_mode(
+            hpx::threads::policies::enable_stealing);
+
+    hpx::threads::add_scheduler_mode(
+            hpx::threads::policies::enable_idle_backoff);
+
+    hpx::threads::add_scheduler_mode(
+            hpx::threads::policies::fast_idle_mode);
     current_task_ptr->set_threads_requested(current_task_ptr->icv.nthreads );
 }
 
