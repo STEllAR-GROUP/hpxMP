@@ -236,7 +236,7 @@ bool hpx_runtime::start_taskgroup()
     //task->tg_exec.reset(new local_priority_queue_executor(task->local_thread_num));
     task->tg_exec.reset(new local_priority_queue_executor(task->team->num_threads));
 #else
-    task->taskgroupLatch.reset(new latch(1));
+    task->taskgroupLatch.reset(new hpxmp_latch(1));
 #endif
     return true;
 }
@@ -547,7 +547,7 @@ void hpx_runtime::create_future_task( int gtid, kmp_task_t *thunk,
 void thread_setup( invoke_func kmp_invoke, microtask_t thread_func,
                    int argc, void **argv, int tid,
                    parallel_region *team, intrusive_ptr<omp_task_data> parent,
-                   latch& threadLatch)
+                   hpxmp_latch& threadLatch)
 {
     intrusive_ptr task_data_ptr(new omp_task_data(tid, team, parent.get()));
 
@@ -612,7 +612,7 @@ void fork_worker( invoke_func kmp_invoke, microtask_t thread_func,
     team.exec.reset(new local_priority_queue_executor(parent->threads_requested));
 #endif
     int running_threads = parent->threads_requested;
-    latch threadLatch(running_threads+1);
+    hpxmp_latch threadLatch(running_threads+1);
 
     for( int i = 0; i < parent->threads_requested; i++ ) {
         hpx::applier::register_thread_nullary(

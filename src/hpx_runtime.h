@@ -190,6 +190,19 @@ class loop_data {
         std::vector<int> iter_count;
 };
 
+//temp solution for cout_up does not allow starting from 0 in HPX
+class hpxmp_latch: public latch {
+public:
+    using latch::latch;
+    void count_up(std::ptrdiff_t n)
+    {
+        HPX_ASSERT(n >= 0);
+
+        std::ptrdiff_t old_count =
+                counter_.fetch_add(n, std::memory_order_acq_rel);
+    }
+};
+
 //Does this need to keep track of the parallel region it is nested in,
 // the omp_task_data of the parent thread, or both?
 //template<typename scheduler>
@@ -220,7 +233,7 @@ struct parallel_region {
     vector<void*> reduce_data;
     vector<loop_data> loop_list;
     mutex_type loop_mtx;
-    latch teamTaskLatch;
+    hpxmp_latch teamTaskLatch;
 #if (HPXMP_HAVE_OMPT)
     ompt_data_t parent_data = ompt_data_none;
     ompt_data_t parallel_data = ompt_data_none;
@@ -288,7 +301,7 @@ class omp_task_data {
         int single_counter{0};
         int loop_num{0};
         bool in_taskgroup{false};
-        latch taskLatch;
+        hpxmp_latch taskLatch;
         atomic<int> pointer_counter{0};
         //shared_future<void> last_df_task;
 #if HPXMP_HAVE_OMPT
@@ -298,7 +311,7 @@ class omp_task_data {
 #ifdef OMP_COMPLIANT
         shared_ptr<local_priority_queue_executor> tg_exec;
 #else
-        shared_ptr<latch> taskgroupLatch;
+        shared_ptr<hpxmp_latch> taskgroupLatch;
 #endif
 
         omp_icv icv;
