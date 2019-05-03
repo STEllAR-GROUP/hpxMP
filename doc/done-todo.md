@@ -63,10 +63,14 @@ The following pragmas and clauses are tested in hpxMP.
 
 *#pragma omp task untied
 
+*#pragma omp taskgroup task_reduction(+:sum)
+
+*#pragma omp task in_reduction(+:sum)
+
 *#pragma omp taskwait
 
 **Note**: Directives not implemented in hpxMP:
-cancellation, taskgroup, threadprivate, copyprivate, and copyin 
+cancellation, threadprivate, copyprivate, and copyin 
 
 # Compiler Support
 hpxMP works wich clang/gcc, 
@@ -86,10 +90,4 @@ A list of callbacks to be supported can be found [here](ompt-priorities.txt).
 reviewed and improved. Currently, OMPT does not work with gcc.
 Other events are not implemented yet.
 
-#02/25/2019
-Taskwait is treated as taskgroup for now. taskgroup is not replaced with barrier yet.
-Note the difference between taskwait and taskgroup.
-With taskwait, the current task waits only for its child tasks.
-With taskgroup, the current task waits not only for the child tasks generated in the taskgroup
-but also for all the descendants of those child tasks.
 
