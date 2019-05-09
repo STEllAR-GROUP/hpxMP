@@ -4,4 +4,4 @@ This is the first version of release for hpxMP.
 
 Detailed introduction please refer to [readme](../README.md).
 
-Date: 01/11/2018
+Date: 11/01/2018
