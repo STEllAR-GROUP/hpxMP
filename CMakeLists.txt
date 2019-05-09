@@ -40,6 +40,11 @@ if(HPXMP_WITH_OMPT)
             src/ompt-internal.h)
 endif()
 
+set(HPXMP_WITH_OMP_50_ENABLED OFF CACHE BOOL "enable openmp 5.0 features in hpxmp")
+if(HPXMP_WITH_OMP_50_ENABLED)
+    add_definitions(-DHPXMP_HAVE_OMP_50_ENABLED)
+endif()
+
 #decide whether debug or release build
 set(RELEASE_BUILD FALSE)
 string(TOLOWER "${CMAKE_BUILD_TYPE}" libhpxmp_build_type_lowercase)
@@ -74,7 +79,7 @@ if(NOT HPX_WITH_HPXMP)
         target_link_libraries(hpxmp PRIVATE -L${dir})
     endforeach()
 
-    target_link_libraries(hpxmp PRIVATE ${HPX_LIBRARIES})
+    target_link_libraries(hpxmp PRIVATE ${HPX_LIBRARIES} hpx_preprocessor)
 
 else()
 

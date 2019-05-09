@@ -55,4 +55,7 @@ Please refer to [Usage Examples](doc/usecases.md) for simple use examples.
 Please refer to [dones and todos](doc/done-todo.md) for information about
 what has been implemented in hpxMP and what needs to be done.
 
+# Credit
 
+Please cite as
+Jeremy Kemp, Tianyi Zhang, Bryce Adelstein, Shahrzad Shirzad, Hartmut Kaiser, Parsa Amini, & Bibek Wagle. (2018, November 1). hpxMP (Version 0.1.0). Zenodo. http://doi.org/10.5281/zenodo.2662481

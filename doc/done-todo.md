@@ -63,10 +63,14 @@ The following pragmas and clauses are tested in hpxMP.
 
 *#pragma omp task untied
 
+*#pragma omp taskgroup task_reduction(+:sum)
+
+*#pragma omp task in_reduction(+:sum)
+
 *#pragma omp taskwait
 
 **Note**: Directives not implemented in hpxMP:
-cancellation, taskgroup, threadprivate, copyprivate, and copyin 
+cancellation, threadprivate, copyprivate, and copyin 
 
 # Compiler Support
 hpxMP works wich clang/gcc, 
@@ -84,5 +88,6 @@ A list of callbacks to be supported can be found [here](ompt-priorities.txt).
 
 **Note**: Currently Mandatory Events are under control, but they needs to be 
 reviewed and improved. Currently, OMPT does not work with gcc.
-Other events are not implemented yet. 
+Other events are not implemented yet.
+
 

@@ -13,7 +13,7 @@ int main(){
         for (int j = 0; j < 1000; j++) {
 #pragma omp parallel
             {
-                printf(" \n");
+                int t = 0;
             }
         }
     }

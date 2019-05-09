@@ -302,7 +302,7 @@ ompt_data_t *__ompt_get_thread_data_internal() {
 
 ompt_data_t* __ompt_get_parallel_data_internal()
 {
-    omp_task_data* omp_task = hpx_backend->get_task_data();
+    auto omp_task = hpx_backend->get_task_data();
     return &omp_task->team->parallel_data;
 }
 

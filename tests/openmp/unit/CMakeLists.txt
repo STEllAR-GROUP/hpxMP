@@ -7,7 +7,6 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fopenmp")
 set(tests
         app_lu
         app_old_fib
-        app_omp_fib
         app_vla
         atomic
         barrier
@@ -32,15 +31,18 @@ set(tests
         #single_copyprivate_2   #failure sometime
         #single_copyprivate_1var    #failure sometime
         single_nowait
-        task_depend
-        taskgroup #to be implemented, not checking correctness
+        taskgroup
         task_fp
         task_tree
         taskwait
         taskwait_2
         #threadprivate  #failure sometime
         )
-
+if(HPXMP_WITH_OMP_50_ENABLED)
+    set(tests_omp50
+            task_in_reduction
+            )
+endif()
 enable_testing()
 
 macro(do_test name)
@@ -57,8 +59,38 @@ macro(do_test name)
             )
 endmacro(do_test)
 
+macro(do_test_enhanced name)
+    add_test(${name} ${name})
+    set_target_properties(${name} PROPERTIES
+            CXX_STANDARD 11
+            CXX_STANDARD_REQUIRED ON
+            CXX_EXTENSIONS OFF
+            )
+    #maybe make the omp_num_threads configurable later
+    set_tests_properties(${name} PROPERTIES
+            ENVIRONMENT "LD_PRELOAD=${PROJECT_BINARY_DIR}/libhpxmp.so;OMP_NUM_THREADS=2"
+            TIMEOUT 60
+            )
+endmacro(do_test_enhanced)
+
+
+
 foreach(test ${tests})
     set(sources ${test}.cpp)
     add_executable(${test} ${sources})
     do_test(${test})
 endforeach()
+
+foreach(test ${tests_enhanced})
+    set(sources ${test}.cpp)
+    add_executable(${test} ${sources})
+    do_test_enhanced(${test})
+endforeach()
+
+if(HPXMP_WITH_OMP_50_ENABLED)
+    foreach(test ${tests_omp50})
+        set(sources ${test}.cpp)
+        add_executable(${test} ${sources})
+        do_test_enhanced(${test})
+    endforeach()
+endif()
