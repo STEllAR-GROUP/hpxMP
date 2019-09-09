@@ -79,7 +79,7 @@ if(NOT HPX_WITH_HPXMP)
         target_link_libraries(hpxmp PRIVATE -L${dir})
     endforeach()
 
-    target_link_libraries(hpxmp PRIVATE ${HPX_LIBRARIES} hpx_preprocessor)
+    target_link_libraries(hpxmp PRIVATE ${HPX_LIBRARIES})
 
 else()
 
