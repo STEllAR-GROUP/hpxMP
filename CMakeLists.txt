@@ -97,3 +97,6 @@ endif()
 add_subdirectory(examples)
 add_subdirectory(tests)
 enable_testing()
+
+find_package(Boost)
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -L${Boost_LIBRARY_DIRS}")
