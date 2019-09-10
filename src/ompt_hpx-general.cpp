@@ -213,7 +213,7 @@ void ompt_post_init()
             }
             if (ompt_enabled.ompt_callback_thread_end)
             {
-                //hpx::register_thread_on_stop_func(&on_thread_stop);
+                hpx::register_thread_on_stop_func(&on_thread_stop);
             }
         }
     }
