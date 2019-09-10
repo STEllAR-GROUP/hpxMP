@@ -147,7 +147,11 @@ int __ompt_get_task_info_internal(int ancestor_level, int* type,
  * registration function
  ***************************************************************************/
 extern thread_local ompt_data_t thread_data;
-void on_thread_start(std::size_t num, char const* name);
-void on_thread_stop(std::size_t num, char const* name);
+void on_thread_start(std::size_t global_thread_num,
+                     std::size_t /* local_thread_num */, char const* /* pool_name */,
+                     char const* name);
+void on_thread_stop(std::size_t global_thread_num,
+                    std::size_t /* local_thread_num */, char const* /* pool_name */,
+                    char const* name);
 
 #endif
