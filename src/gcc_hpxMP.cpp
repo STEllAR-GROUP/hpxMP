@@ -11,7 +11,7 @@
 #include <boost/shared_ptr.hpp>
 #include <iostream>
 #include <assert.h>
-#include <hpx/util/assert.hpp>
+#include <hpx/assertion.hpp>
 
 extern boost::shared_ptr<hpx_runtime> hpx_backend;
 
@@ -629,6 +629,7 @@ xexpand(KMP_API_NAME_GOMP_SECTIONS_START)(unsigned count) {
     std::cout << "KMP_API_NAME_GOMP_SECTIONS_START" << std::endl;
 #endif
     HPX_ASSERT(false);
+    return (unsigned)0;
 }
 
 unsigned
