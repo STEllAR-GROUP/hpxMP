@@ -629,7 +629,7 @@ xexpand(KMP_API_NAME_GOMP_SECTIONS_START)(unsigned count) {
     std::cout << "KMP_API_NAME_GOMP_SECTIONS_START" << std::endl;
 #endif
     HPX_ASSERT(false);
-    return (unsigned)0;
+    return 0;
 }
 
 unsigned
