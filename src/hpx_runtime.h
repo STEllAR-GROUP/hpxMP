@@ -14,9 +14,9 @@
 
 #include <hpx/hpx.hpp>
 #include <hpx/hpx_start.hpp>
-#include <hpx/runtime/threads/topology.hpp>
+#include <hpx/topology/topology.hpp>
 #include <hpx/lcos/local/barrier.hpp>
-#include <hpx/util/static.hpp>
+#include <hpx/type_support/static.hpp>
 #include <hpx/include/lcos.hpp>
 #include <hpx/lcos/local/condition_variable.hpp>
 
@@ -31,7 +31,7 @@
 //#include <boost/thread/mutex.hpp>
 //#include <boost/thread/condition.hpp>
 
-#include <hpx/util/high_resolution_timer.hpp>
+#include <hpx/timing/high_resolution_timer.hpp>
 #include <map>
 
 #include "icv-vars.h"

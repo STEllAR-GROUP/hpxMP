@@ -79,7 +79,7 @@ if(NOT HPX_WITH_HPXMP)
         target_link_libraries(hpxmp PRIVATE -L${dir})
     endforeach()
 
-    target_link_libraries(hpxmp PRIVATE ${HPX_LIBRARIES} hpx_preprocessor)
+    target_link_libraries(hpxmp PRIVATE ${HPX_LIBRARIES})
 
 else()
 
@@ -97,3 +97,6 @@ endif()
 add_subdirectory(examples)
 add_subdirectory(tests)
 enable_testing()
+
+find_package(Boost)
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -L${Boost_LIBRARY_DIRS}")

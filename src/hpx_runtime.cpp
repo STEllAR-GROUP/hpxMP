@@ -13,6 +13,7 @@
 // being compiled as part of HPX itself
 #include <hpx/hpx_start_impl.hpp>
 #include <hpx/runtime/threads/run_as_hpx_thread.hpp>
+#include <hpx/program_options/options_description.hpp>
 
 using std::cout;
 using std::endl;
@@ -97,7 +98,7 @@ void start_hpx(int initial_num_threads)
     argv[1] = const_cast<char*>("--hpx:queuing=static");
 #endif
     hpx::util::function_nonser<int(boost::program_options::variables_map& vm)> f;
-    boost::program_options::options_description desc_cmdline;
+    hpx::program_options::options_description desc_cmdline;
 
     std::mutex startup_mtx;
     std::condition_variable cond;//TODO: replace this with something that can be checked later, once hpx is needed.
