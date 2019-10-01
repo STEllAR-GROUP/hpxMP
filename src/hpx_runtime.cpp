@@ -262,14 +262,14 @@ void hpx_runtime::end_taskgroup()
 void hpx_runtime::task_wait()
 {
     auto task = get_task_data();
-    intrusive_ptr task_ptr(task);
+    intrusive_ptr<omp_task_data> task_ptr(task);
     task_ptr->taskLatch.wait();
 }
 
 void task_setup( int gtid, intrusive_ptr<kmp_task_t> kmp_task_ptr, intrusive_ptr<omp_task_data> parent_task_ptr)
 {
     auto task_func = kmp_task_ptr->routine;
-    intrusive_ptr current_task_ptr(new omp_task_data(gtid, parent_task_ptr->team, parent_task_ptr->icv));
+    intrusive_ptr<omp_task_data> current_task_ptr(new omp_task_data(gtid, parent_task_ptr->team, parent_task_ptr->icv));
     set_thread_data( get_self_id(), reinterpret_cast<size_t>(current_task_ptr.get()));
 #if HPXMP_HAVE_OMPT
     ompt_data_t *my_task_data = &hpx_backend->get_task_data()->task_data;
@@ -550,7 +550,7 @@ void thread_setup( invoke_func kmp_invoke, microtask_t thread_func,
                    parallel_region *team, intrusive_ptr<omp_task_data> parent,
                    hpxmp_latch& threadLatch)
 {
-    intrusive_ptr task_data_ptr(new omp_task_data(tid, team, parent.get()));
+    intrusive_ptr<omp_task_data> task_data_ptr(new omp_task_data(tid, team, parent.get()));
 
     set_thread_data( get_self_id(), reinterpret_cast<size_t>(task_data_ptr.get()));
 
