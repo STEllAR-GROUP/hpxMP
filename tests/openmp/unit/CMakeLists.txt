@@ -22,6 +22,7 @@ set(tests
         for_static
         master
         max_threads
+        omp_set_get_nested
         par_for
         par_nested
         par_single
