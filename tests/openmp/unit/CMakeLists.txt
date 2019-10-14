@@ -8,7 +8,6 @@ set(tests
         app_lu
         app_old_fib
         app_vla
-        omp_atomic
         barrier
         critical
         critical_2
@@ -22,6 +21,7 @@ set(tests
         for_static
         master
         max_threads
+        omp_atomic
         par_for
         par_nested
         par_single

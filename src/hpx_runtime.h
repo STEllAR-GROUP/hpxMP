@@ -271,7 +271,7 @@ class omp_task_data {
 
         //This is for explicit tasks
         omp_task_data(int tid, parallel_region *T, omp_icv icv_vars)
-            : local_thread_num(tid), team(T), icv(icv_vars),taskLatch(0)
+            : local_thread_num(tid), team(T), taskLatch(0), icv(icv_vars)
         {
             threads_requested = icv.nthreads;
             icv_vars.device = icv.device;
