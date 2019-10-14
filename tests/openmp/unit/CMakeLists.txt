@@ -8,7 +8,7 @@ set(tests
         app_lu
         app_old_fib
         app_vla
-        atomic
+        omp_atomic
         barrier
         critical
         critical_2
