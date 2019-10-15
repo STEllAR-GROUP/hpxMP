@@ -28,6 +28,6 @@ endmacro(do_test)
 
 foreach(test ${tests})
     set(sources ${test}.cpp)
-    add_executable(${test} ${sources})
-    do_test(${test})
+    add_executable(tests.omp.regression.${test} ${sources})
+    do_test(tests.omp.regression.${test})
 endforeach()
