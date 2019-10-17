@@ -1002,4 +1002,11 @@ void omp_unset_nest_lock(omp_lock_t **lock) {
     (*lock)->unlock();
 }
 
+void omp_set_nested(int val){
+    #if defined DEBUG && defined HPXMP_HAVE_TRACE
+        std::cout<<"hpxMP always sets nested to true"<<std::endl;
+    #endif
+    start_backend();
+};
+int omp_get_nested(){return 1;};
 
