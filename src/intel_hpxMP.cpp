@@ -15,24 +15,24 @@ boost::shared_ptr<hpx_runtime> hpx_backend;
 // outside a parallel region, it makes this check and generates it's own 
 // output, but does not start the runtime.
 void start_backend(){
-    #if defined DEBUG && defined HPXMP_HAVE_TRACE
+    #if defined RELEASE && defined HPXMP_HAVE_TRACE
         std::cout<<"start_backend"<<std::endl;
     #endif
     if(!hpx_backend) {
         hpx_backend.reset(new hpx_runtime());
-        #if defined DEBUG && defined HPXMP_HAVE_TRACE
+        #if defined RELEASE && defined HPXMP_HAVE_TRACE
                 std::cout<<"new hpx runtime started"<<std::endl;
         #endif
     }
     else {
-        #if defined DEBUG && defined HPXMP_HAVE_TRACE
+        #if defined RELEASE && defined HPXMP_HAVE_TRACE
                 std::cout << "hpx runtime exists" << std::endl;
         #endif
     }
 }
 
 int __kmpc_ok_to_fork(ident_t *loc){
-    #if defined DEBUG && defined HPXMP_HAVE_TRACE
+    #if defined RELEASE && defined HPXMP_HAVE_TRACE
         std::cout<<"kmpc_ok_to_fork"<<std::endl;
     #endif
     start_backend();
@@ -40,14 +40,14 @@ int __kmpc_ok_to_fork(ident_t *loc){
 }
 
 void __kmpc_begin( ident_t *, kmp_int32 flags ) {
-    #if defined DEBUG && defined HPXMP_HAVE_TRACE
+    #if defined RELEASE && defined HPXMP_HAVE_TRACE
         std::cout<<"__kmpc_begin"<<std::endl;
     #endif
     start_backend();
 }
 
 void __kmpc_end(ident_t *loc) {
-    #if defined DEBUG && defined HPXMP_HAVE_TRACE
+    #if defined RELEASE && defined HPXMP_HAVE_TRACE
         std::cout<<"__kmpc_end"<<std::endl;
     #endif
     start_backend();
@@ -55,7 +55,7 @@ void __kmpc_end(ident_t *loc) {
 
 void
 __kmpc_fork_call(ident_t *loc, kmp_int32 argc, kmpc_micro microtask, ...) {
-    #if defined DEBUG && defined HPXMP_HAVE_TRACE
+    #if defined RELEASE && defined HPXMP_HAVE_TRACE
         std::cout<<"__kmpc_fork_call"<<std::endl;
     #endif
 #if HPXMP_HAVE_OMPT
@@ -85,7 +85,7 @@ __kmpc_omp_task_alloc( ident_t *loc_ref, kmp_int32 gtid, kmp_int32 flags,
                        size_t sizeof_kmp_task_t, size_t sizeof_shareds,
                        kmp_routine_entry_t task_entry ){
 
-    #if defined DEBUG && defined HPXMP_HAVE_TRACE
+    #if defined RELEASE && defined HPXMP_HAVE_TRACE
         std::cout<<"__kmpc_omp_task_alloc"<<std::endl;
     #endif
     start_backend();
@@ -109,7 +109,7 @@ __kmpc_omp_task_alloc( ident_t *loc_ref, kmp_int32 gtid, kmp_int32 flags,
 }
 
 int __kmpc_omp_task( ident_t *loc_ref, kmp_int32 gtid, kmp_task_t * new_task){
-    #if defined DEBUG && defined HPXMP_HAVE_TRACE
+    #if defined RELEASE && defined HPXMP_HAVE_TRACE
         std::cout<<"__kmpc_omp_task"<<std::endl;
     #endif
     start_backend();
@@ -123,7 +123,7 @@ kmp_int32
 __kmpc_omp_task_with_deps( ident_t *loc_ref, kmp_int32 gtid, kmp_task_t * new_task,
                            kmp_int32 ndeps, kmp_depend_info_t *dep_list,
                            kmp_int32 ndeps_noalias, kmp_depend_info_t *noalias_dep_list ){
-    #if defined DEBUG && defined HPXMP_HAVE_TRACE
+    #if defined RELEASE && defined HPXMP_HAVE_TRACE
         std::cout<<"__kmpc_omp_task_with_deps"<<std::endl;
     #endif
     start_backend();
@@ -151,7 +151,7 @@ __kmpc_omp_task_with_deps( ident_t *loc_ref, kmp_int32 gtid, kmp_task_t * new_ta
 //    TASK_CURRENT_NOT_QUEUED (0) if did not suspend and queue current task to be resumed later.
 //    TASK_CURRENT_QUEUED (1) if suspended and queued the current task to be resumed later.
 int __kmpc_omp_task_parts( ident_t *loc_ref, int gtid, kmp_task_t * new_task) {
-    #if defined DEBUG && defined HPXMP_HAVE_TRACE
+    #if defined RELEASE && defined HPXMP_HAVE_TRACE
         std::cout<<"__kmpc_omp_task_parts"<<std::endl;
     #endif
     start_backend();
@@ -160,7 +160,7 @@ int __kmpc_omp_task_parts( ident_t *loc_ref, int gtid, kmp_task_t * new_task) {
 }
 
 kmp_int32 __kmpc_omp_taskwait( ident_t *loc_ref, kmp_int32 gtid ){
-    #if defined DEBUG && defined HPXMP_HAVE_TRACE
+    #if defined RELEASE && defined HPXMP_HAVE_TRACE
         std::cout<<"__kmpc_omp_taskwait"<<std::endl;
     #endif
     start_backend();
@@ -196,7 +196,7 @@ kmp_int32 __kmpc_omp_taskwait( ident_t *loc_ref, kmp_int32 gtid ){
 }
 
 kmp_int32 __kmpc_omp_taskyield(ident_t *loc_ref, kmp_int32 gtid, int end_part ){
-    #if defined DEBUG && defined HPXMP_HAVE_TRACE
+    #if defined RELEASE && defined HPXMP_HAVE_TRACE
         std::cout<<"__kmpc_omp_taskyield"<<std::endl;
     #endif
     start_backend();
@@ -346,7 +346,7 @@ void __kmp_task_reduction_fini(void *thr, intrusive_ptr<kmp_taskgroup_t> tg) {
 
 void __kmpc_taskgroup( ident_t* loc, int gtid ) {
     if( hpx_backend->start_taskgroup() ) {
-        #if defined DEBUG && defined HPXMP_HAVE_TRACE
+        #if defined RELEASE && defined HPXMP_HAVE_TRACE
                 std::cout<<"__kmpc_taskgroup"<<std::endl;
         #endif
         start_backend();
@@ -371,7 +371,7 @@ void __kmpc_taskgroup( ident_t* loc, int gtid ) {
 
 //Wait until all tasks generated by the current task and its descendants are complete
 void __kmpc_end_taskgroup( ident_t* loc, int gtid ) {
-    #if defined DEBUG && defined HPXMP_HAVE_TRACE
+    #if defined RELEASE && defined HPXMP_HAVE_TRACE
         std::cout<<"__kmpc_end_taskgroup"<<std::endl;
     #endif
     start_backend();
@@ -401,7 +401,7 @@ void
 __kmpc_omp_wait_deps( ident_t *loc_ref, kmp_int32 gtid, kmp_int32 ndeps, 
                       kmp_depend_info_t *dep_list, kmp_int32 ndeps_noalias, 
                       kmp_depend_info_t *noalias_dep_list ){
-    #if defined DEBUG && defined HPXMP_HAVE_TRACE
+    #if defined RELEASE && defined HPXMP_HAVE_TRACE
         std::cout<<"__kmpc_omp_wait_deps"<<std::endl;
     #endif
     start_backend();
@@ -414,7 +414,7 @@ __kmpc_omp_wait_deps( ident_t *loc_ref, kmp_int32 gtid, kmp_int32 ndeps,
 }
 
 void __kmpc_omp_task_begin_if0( ident_t *loc_ref, kmp_int32 gtid, kmp_task_t * task ){
-    #if defined DEBUG && defined HPXMP_HAVE_TRACE
+    #if defined RELEASE && defined HPXMP_HAVE_TRACE
         std::cout<<"__kmpc_omp_task_begin_if0"<<std::endl;
     #endif
     start_backend();
@@ -424,7 +424,7 @@ void __kmpc_omp_task_begin_if0( ident_t *loc_ref, kmp_int32 gtid, kmp_task_t * t
 }
 void
 __kmpc_omp_task_complete_if0( ident_t *loc_ref, kmp_int32 gtid, kmp_task_t *task) {
-    #if defined DEBUG && defined HPXMP_HAVE_TRACE
+    #if defined RELEASE && defined HPXMP_HAVE_TRACE
         std::cout<<"__kmpc_omp_task_complete_if0"<<std::endl;
     #endif
     start_backend();
@@ -438,7 +438,7 @@ void
 __kmpc_push_num_threads( ident_t *loc, 
                          kmp_int32 global_tid, 
                          kmp_int32 num_threads ){
-    #if defined DEBUG && defined HPXMP_HAVE_TRACE
+    #if defined RELEASE && defined HPXMP_HAVE_TRACE
         std::cout<<"__kmpc_push_num_threads"<<std::endl;
     #endif
     start_backend();
@@ -449,7 +449,7 @@ __kmpc_push_num_threads( ident_t *loc,
 
 void
 __kmpc_barrier(ident_t *loc, kmp_int32 global_tid) {
-    #if defined DEBUG && defined HPXMP_HAVE_TRACE
+    #if defined RELEASE && defined HPXMP_HAVE_TRACE
         std::cout<<"__kmpc_barrier"<<std::endl;
     #endif
     start_backend();
@@ -483,7 +483,7 @@ __kmpc_barrier(ident_t *loc, kmp_int32 global_tid) {
 }
 
 int  __kmpc_cancel_barrier(ident_t* loc_ref, kmp_int32 gtid){
-    #if defined DEBUG && defined HPXMP_HAVE_TRACE
+    #if defined RELEASE && defined HPXMP_HAVE_TRACE
         std::cout<<"__kmpc_cancel_barrier"<<std::endl;
     #endif
     start_backend();
@@ -492,7 +492,7 @@ int  __kmpc_cancel_barrier(ident_t* loc_ref, kmp_int32 gtid){
 }
 
 int __kmpc_global_thread_num(ident_t *loc){
-    #if defined DEBUG && defined HPXMP_HAVE_TRACE
+    #if defined RELEASE && defined HPXMP_HAVE_TRACE
         std::cout<<"__kmpc_global_thread_num"<<std::endl;
     #endif
 #if HPXMP_HAVE_OMPT
@@ -506,7 +506,7 @@ int __kmpc_global_thread_num(ident_t *loc){
 }
 
 int __kmpc_single(ident_t *loc, int tid){
-    #if defined DEBUG && defined HPXMP_HAVE_TRACE
+    #if defined RELEASE && defined HPXMP_HAVE_TRACE
         std::cout<<"__kmpc_single"<<std::endl;
     #endif
     start_backend();
@@ -531,14 +531,14 @@ int __kmpc_single(ident_t *loc, int tid){
 
 //in the intel runtime, only the single thread calls this
 void __kmpc_end_single(ident_t *loc, int tid){
-    #if defined DEBUG && defined HPXMP_HAVE_TRACE
+    #if defined RELEASE && defined HPXMP_HAVE_TRACE
         std::cout<<"__kmpc_end_single"<<std::endl;
     #endif
     start_backend();
 }
 
 int __kmpc_master(ident_t *loc, int global_tid){
-    #if defined DEBUG && defined HPXMP_HAVE_TRACE
+    #if defined RELEASE && defined HPXMP_HAVE_TRACE
         std::cout<<"__kmpc_master"<<std::endl;
     #endif
     start_backend();
@@ -549,7 +549,7 @@ int __kmpc_master(ident_t *loc, int global_tid){
 }
 
 void __kmpc_end_master(ident_t *loc, int global_tid){
-    #if defined DEBUG && defined HPXMP_HAVE_TRACE
+    #if defined RELEASE && defined HPXMP_HAVE_TRACE
         std::cout<<"__kmpc_end_master"<<std::endl;
     #endif
     start_backend();
@@ -557,7 +557,7 @@ void __kmpc_end_master(ident_t *loc, int global_tid){
 
 void
 __kmpc_critical( ident_t * loc, kmp_int32 global_tid, kmp_critical_name * crit ) {
-    #if defined DEBUG && defined HPXMP_HAVE_TRACE
+    #if defined RELEASE && defined HPXMP_HAVE_TRACE
         std::cout<<"__kmpc_critical"<<std::endl;
     #endif
     start_backend();
@@ -567,7 +567,7 @@ __kmpc_critical( ident_t * loc, kmp_int32 global_tid, kmp_critical_name * crit )
 
 void
 __kmpc_end_critical(ident_t *loc, kmp_int32 global_tid, kmp_critical_name *crit) {
-    #if defined DEBUG && defined HPXMP_HAVE_TRACE
+    #if defined RELEASE && defined HPXMP_HAVE_TRACE
         std::cout<<"__kmpc_end_critical"<<std::endl;
     #endif
     start_backend();
@@ -576,7 +576,7 @@ __kmpc_end_critical(ident_t *loc, kmp_int32 global_tid, kmp_critical_name *crit)
 }
 
 void __kmpc_flush(ident_t *loc, ...){
-    #if defined DEBUG && defined HPXMP_HAVE_TRACE
+    #if defined RELEASE && defined HPXMP_HAVE_TRACE
         std::cout<<"kmpc_ok_to_fork"<<std::endl;
     #endif
     start_backend();
@@ -584,7 +584,7 @@ void __kmpc_flush(ident_t *loc, ...){
 }
 
 void * __kmpc_future_cached(ident_t *  loc, kmp_int32  global_tid, void *data, size_t size, void ***cache) {
-    #if defined DEBUG && defined HPXMP_HAVE_TRACE
+    #if defined RELEASE && defined HPXMP_HAVE_TRACE
         std::cout<<"__kmpc_future_cache"<<std::endl;
     #endif
     start_backend();
@@ -607,7 +607,7 @@ void * __kmpc_future_cached(ident_t *  loc, kmp_int32  global_tid, void *data, s
 
 //I think I need to pair up *data to with the memory allocated to represend the threadlocal version
 void* __kmpc_threadprivate_cached( ident_t *loc, kmp_int32 tid, void *data, size_t size, void ***cache){
-    #if defined DEBUG && defined HPXMP_HAVE_TRACE
+    #if defined RELEASE && defined HPXMP_HAVE_TRACE
         std::cout<<"__kmpc_threadprivate_cached"<<std::endl;
     #endif
     start_backend();
@@ -635,7 +635,7 @@ void* __kmpc_threadprivate_cached( ident_t *loc, kmp_int32 tid, void *data, size
 void
 __kmpc_copyprivate( ident_t *loc, kmp_int32 gtid, size_t cpy_size, void *cpy_data, void(*cpy_func)(void*,void*), kmp_int32 didit )
 {
-    #if defined DEBUG && defined HPXMP_HAVE_TRACE
+    #if defined RELEASE && defined HPXMP_HAVE_TRACE
         std::cout<<"__kmpc_copyprivate"<<std::endl;
     #endif
     start_backend();
@@ -650,7 +650,7 @@ __kmpc_copyprivate( ident_t *loc, kmp_int32 gtid, size_t cpy_size, void *cpy_dat
 
 int __kmpc_reduce_nowait( ident_t *loc, kmp_int32 gtid, kmp_int32 num_vars, size_t size,
                       void *data,  void (*reduce)(void *lhs, void *rhs), kmp_critical_name *lck ) {
-    #if defined DEBUG && defined HPXMP_HAVE_TRACE
+    #if defined RELEASE && defined HPXMP_HAVE_TRACE
         std::cout<<"__kmpc_reduce_nowait"<<std::endl;
     #endif
     start_backend();
@@ -661,7 +661,7 @@ int __kmpc_reduce_nowait( ident_t *loc, kmp_int32 gtid, kmp_int32 num_vars, size
 }
 
 void __kmpc_end_reduce_nowait( ident_t *loc, kmp_int32 gtid, kmp_critical_name *lck ) {
-    #if defined DEBUG && defined HPXMP_HAVE_TRACE
+    #if defined RELEASE && defined HPXMP_HAVE_TRACE
         std::cout<<"__kmpc_end_reduce_nowait"<<std::endl;
     #endif
     start_backend();
@@ -682,7 +682,7 @@ void __kmpc_end_reduce_nowait( ident_t *loc, kmp_int32 gtid, kmp_critical_name *
 int 
 __kmpc_reduce( ident_t *loc, kmp_int32 gtid, kmp_int32 num_vars, size_t size, 
                void *data, void (*func)(void *lhs, void *rhs), kmp_critical_name *lck ) {
-    #if defined DEBUG && defined HPXMP_HAVE_TRACE
+    #if defined RELEASE && defined HPXMP_HAVE_TRACE
         std::cout<<"__kmpc_reduce"<<std::endl;
     #endif
     start_backend();
@@ -715,7 +715,7 @@ __kmpc_reduce( ident_t *loc, kmp_int32 gtid, kmp_int32 num_vars, size_t size,
 //thread 0
 void
 __kmpc_end_reduce( ident_t *loc, kmp_int32 gtid, kmp_critical_name *lck ) {
-    #if defined DEBUG && defined HPXMP_HAVE_TRACE
+    #if defined RELEASE && defined HPXMP_HAVE_TRACE
         std::cout<<"__kmpc_end_reduce"<<std::endl;
     #endif
     start_backend();
@@ -729,7 +729,7 @@ __kmpc_end_reduce( ident_t *loc, kmp_int32 gtid, kmp_critical_name *lck ) {
 }
 
 void __kmpc_init_lock( ident_t *loc, kmp_int32 gtid,  void **lock ){
-    #if defined DEBUG && defined HPXMP_HAVE_TRACE
+    #if defined RELEASE && defined HPXMP_HAVE_TRACE
         std::cout<<"__kmpc_init_lock"<<std::endl;
     #endif
     start_backend();
@@ -737,7 +737,7 @@ void __kmpc_init_lock( ident_t *loc, kmp_int32 gtid,  void **lock ){
 }
 
 void __kmpc_destroy_lock( ident_t *loc, kmp_int32 gtid, void **lock ){
-    #if defined DEBUG && defined HPXMP_HAVE_TRACE
+    #if defined RELEASE && defined HPXMP_HAVE_TRACE
         std::cout<<"__kmpc_destroy_lock"<<std::endl;
     #endif
     start_backend();
@@ -745,7 +745,7 @@ void __kmpc_destroy_lock( ident_t *loc, kmp_int32 gtid, void **lock ){
 }
 
 void __kmpc_set_lock( ident_t *loc, kmp_int32 gtid, void **lock ){
-    #if defined DEBUG && defined HPXMP_HAVE_TRACE
+    #if defined RELEASE && defined HPXMP_HAVE_TRACE
         std::cout<<"__kmpc_set_lock"<<std::endl;
     #endif
     start_backend();
@@ -753,7 +753,7 @@ void __kmpc_set_lock( ident_t *loc, kmp_int32 gtid, void **lock ){
 }
 
 void __kmpc_unset_lock( ident_t *loc, kmp_int32 gtid, void **lock ){
-    #if defined DEBUG && defined HPXMP_HAVE_TRACE
+    #if defined RELEASE && defined HPXMP_HAVE_TRACE
         std::cout<<"__kmpc_unset_lock"<<std::endl;
     #endif
     start_backend();
@@ -761,7 +761,7 @@ void __kmpc_unset_lock( ident_t *loc, kmp_int32 gtid, void **lock ){
 }
 
 int __kmpc_test_lock( ident_t *loc, kmp_int32 gtid, void **lock ){
-    #if defined DEBUG && defined HPXMP_HAVE_TRACE
+    #if defined RELEASE && defined HPXMP_HAVE_TRACE
         std::cout<<"__kmpc_test_lock"<<std::endl;
     #endif
     start_backend();
@@ -770,7 +770,7 @@ int __kmpc_test_lock( ident_t *loc, kmp_int32 gtid, void **lock ){
 
 
 void __kmpc_init_nest_lock( ident_t *loc, kmp_int32 gtid, void **lock ){
-    #if defined DEBUG && defined HPXMP_HAVE_TRACE
+    #if defined RELEASE && defined HPXMP_HAVE_TRACE
         std::cout<<"__kmpc_init_nest_lock"<<std::endl;
     #endif
     start_backend();
@@ -778,7 +778,7 @@ void __kmpc_init_nest_lock( ident_t *loc, kmp_int32 gtid, void **lock ){
 }
 
 void __kmpc_destroy_nest_lock( ident_t *loc, kmp_int32 gtid, void **lock ){
-    #if defined DEBUG && defined HPXMP_HAVE_TRACE
+    #if defined RELEASE && defined HPXMP_HAVE_TRACE
         std::cout<<"__kmpc_destroy_nest_lock"<<std::endl;
     #endif
     start_backend();
@@ -786,7 +786,7 @@ void __kmpc_destroy_nest_lock( ident_t *loc, kmp_int32 gtid, void **lock ){
 }
 
 void __kmpc_set_nest_lock( ident_t *loc, kmp_int32 gtid, void **lock ){
-    #if defined DEBUG && defined HPXMP_HAVE_TRACE
+    #if defined RELEASE && defined HPXMP_HAVE_TRACE
         std::cout<<"__kmpc_set_nest_lock"<<std::endl;
     #endif
     start_backend();
@@ -794,7 +794,7 @@ void __kmpc_set_nest_lock( ident_t *loc, kmp_int32 gtid, void **lock ){
 }
 
 void __kmpc_unset_nest_lock( ident_t *loc, kmp_int32 gtid, void **lock ){
-    #if defined DEBUG && defined HPXMP_HAVE_TRACE
+    #if defined RELEASE && defined HPXMP_HAVE_TRACE
         std::cout<<"__kmpc_unset_nest_lock"<<std::endl;
     #endif
     start_backend();
@@ -802,7 +802,7 @@ void __kmpc_unset_nest_lock( ident_t *loc, kmp_int32 gtid, void **lock ){
 }
 
 int __kmpc_test_nest_lock( ident_t *loc, kmp_int32 gtid, void **lock ){
-    #if defined DEBUG && defined HPXMP_HAVE_TRACE
+    #if defined RELEASE && defined HPXMP_HAVE_TRACE
         std::cout<<"__kmpc_test_nest_lock"<<std::endl;
     #endif
     start_backend();
@@ -810,7 +810,7 @@ int __kmpc_test_nest_lock( ident_t *loc, kmp_int32 gtid, void **lock ){
 }
 
 void __kmpc_serialized_parallel( ident_t *, kmp_int32 global_tid ){
-    #if defined DEBUG && defined HPXMP_HAVE_TRACE
+    #if defined RELEASE && defined HPXMP_HAVE_TRACE
         std::cout<<"__kmpc_serialized_parallel"<<std::endl;
     #endif
     start_backend();
@@ -819,7 +819,7 @@ void __kmpc_serialized_parallel( ident_t *, kmp_int32 global_tid ){
 }
 
 void __kmpc_end_serialized_parallel ( ident_t *, kmp_int32 global_tid ) {
-    #if defined DEBUG && defined HPXMP_HAVE_TRACE
+    #if defined RELEASE && defined HPXMP_HAVE_TRACE
         std::cout<<"__kmpc_end_serialized_parallel"<<std::endl;
     #endif
     start_backend();
@@ -828,7 +828,7 @@ void __kmpc_end_serialized_parallel ( ident_t *, kmp_int32 global_tid ) {
 
 //Library functions:--------------------------------------------------
 int omp_get_thread_num(){
-    #if defined DEBUG && defined HPXMP_HAVE_TRACE
+    #if defined RELEASE && defined HPXMP_HAVE_TRACE
         std::cout<<"omp_get_thread_num"<<std::endl;
     #endif
     start_backend();
@@ -840,7 +840,7 @@ int omp_get_thread_num(){
 
 //"returns the number of threads in the current team"
 int omp_get_num_threads(){
-    #if defined DEBUG && defined HPXMP_HAVE_TRACE
+    #if defined RELEASE && defined HPXMP_HAVE_TRACE
         std::cout<<"omp_get_num_threads"<<std::endl;
     #endif
     start_backend();
@@ -848,7 +848,7 @@ int omp_get_num_threads(){
 }
 
 void omp_get_num_threads(int num_threads){
-    #if defined DEBUG && defined HPXMP_HAVE_TRACE
+    #if defined RELEASE && defined HPXMP_HAVE_TRACE
         std::cout<<"omp_get_num_threads"<<std::endl;
     #endif
     start_backend();
@@ -856,7 +856,7 @@ void omp_get_num_threads(int num_threads){
 }
 
 int omp_get_max_threads() {
-    #if defined DEBUG && defined HPXMP_HAVE_TRACE
+    #if defined RELEASE && defined HPXMP_HAVE_TRACE
         std::cout<<"omp_get_max_threads"<<std::endl;
     #endif
     start_backend();
@@ -864,7 +864,7 @@ int omp_get_max_threads() {
 }
 
 int omp_get_num_procs(){
-    #if defined DEBUG && defined HPXMP_HAVE_TRACE
+    #if defined RELEASE && defined HPXMP_HAVE_TRACE
         std::cout<<"omp_get_num_procs"<<std::endl;
     #endif
     start_backend();
@@ -872,7 +872,7 @@ int omp_get_num_procs(){
 }
 
 void omp_set_num_threads(int num_threads) {
-    #if defined DEBUG && defined HPXMP_HAVE_TRACE
+    #if defined RELEASE && defined HPXMP_HAVE_TRACE
         std::cout<<"omp_set_num_threads"<<std::endl;
     #endif
     start_backend();
@@ -880,7 +880,7 @@ void omp_set_num_threads(int num_threads) {
 }
 
 double omp_get_wtime(){
-    #if defined DEBUG && defined HPXMP_HAVE_TRACE
+    #if defined RELEASE && defined HPXMP_HAVE_TRACE
         std::cout<<"omp_get_wtime"<<std::endl;
     #endif
     start_backend();
@@ -888,7 +888,7 @@ double omp_get_wtime(){
 }
 
 double omp_get_wtick(){
-    #if defined DEBUG && defined HPXMP_HAVE_TRACE
+    #if defined RELEASE && defined HPXMP_HAVE_TRACE
         std::cout<<"omp_get_wtick"<<std::endl;
     #endif
     start_backend();
@@ -896,7 +896,7 @@ double omp_get_wtick(){
 }
 
 int omp_in_parallel(){
-    #if defined DEBUG && defined HPXMP_HAVE_TRACE
+    #if defined RELEASE && defined HPXMP_HAVE_TRACE
         std::cout<<"omp_in_parallel"<<std::endl;
     #endif
     start_backend();
@@ -906,7 +906,7 @@ int omp_in_parallel(){
 
 
 void omp_set_dynamic(int dynamic_threads){
-    #if defined DEBUG && defined HPXMP_HAVE_TRACE
+    #if defined RELEASE && defined HPXMP_HAVE_TRACE
         std::cout<<"omp_set_dynamic"<<std::endl;
     #endif
     start_backend();
@@ -914,7 +914,7 @@ void omp_set_dynamic(int dynamic_threads){
 }
 
 int omp_get_dynamic(){
-    #if defined DEBUG && defined HPXMP_HAVE_TRACE
+    #if defined RELEASE && defined HPXMP_HAVE_TRACE
         std::cout<<"omp_get_dynamic"<<std::endl;
     #endif
     start_backend();
@@ -922,7 +922,7 @@ int omp_get_dynamic(){
 }
 
 void omp_init_lock(omp_lock_t **lock){
-    #if defined DEBUG && defined HPXMP_HAVE_TRACE
+    #if defined RELEASE && defined HPXMP_HAVE_TRACE
         std::cout<<"omp_init_lock"<<std::endl;
     #endif
     start_backend();
@@ -930,7 +930,7 @@ void omp_init_lock(omp_lock_t **lock){
 }
 
 void omp_init_nest_lock(omp_lock_t **lock){
-    #if defined DEBUG && defined HPXMP_HAVE_TRACE
+    #if defined RELEASE && defined HPXMP_HAVE_TRACE
         std::cout<<"omp_init_nest_lock"<<std::endl;
     #endif
     start_backend();
@@ -938,14 +938,14 @@ void omp_init_nest_lock(omp_lock_t **lock){
 }
 
 void omp_destroy_lock(omp_lock_t **lock) {
-    #if defined DEBUG && defined HPXMP_HAVE_TRACE
+    #if defined RELEASE && defined HPXMP_HAVE_TRACE
         std::cout<<"omp_destroy_lock"<<std::endl;
     #endif
     start_backend();
     delete *lock;
 }
 void omp_destroy_nest_lock(omp_lock_t **lock) {
-    #if defined DEBUG && defined HPXMP_HAVE_TRACE
+    #if defined RELEASE && defined HPXMP_HAVE_TRACE
         std::cout<<"omp_destroy_nest_lock"<<std::endl;
     #endif
     start_backend();
@@ -953,7 +953,7 @@ void omp_destroy_nest_lock(omp_lock_t **lock) {
 }
 
 int omp_test_lock(omp_lock_t **lock) {
-    #if defined DEBUG && defined HPXMP_HAVE_TRACE
+    #if defined RELEASE && defined HPXMP_HAVE_TRACE
         std::cout<<"omp_test_lock"<<std::endl;
     #endif
     start_backend();
@@ -962,7 +962,7 @@ int omp_test_lock(omp_lock_t **lock) {
     return 0;
 }
 int omp_test_nest_lock(omp_lock_t **lock) {
-    #if defined DEBUG && defined HPXMP_HAVE_TRACE
+    #if defined RELEASE && defined HPXMP_HAVE_TRACE
         std::cout<<"omp_test_nest_lock"<<std::endl;
     #endif
     start_backend();
@@ -972,14 +972,14 @@ int omp_test_nest_lock(omp_lock_t **lock) {
 }
 
 void omp_set_lock(omp_lock_t **lock) {
-    #if defined DEBUG && defined HPXMP_HAVE_TRACE
+    #if defined RELEASE && defined HPXMP_HAVE_TRACE
         std::cout<<"omp_set_lock"<<std::endl;
     #endif
     start_backend();
     (*lock)->lock();
 }
 void omp_set_nest_lock(omp_lock_t **lock) {
-    #if defined DEBUG && defined HPXMP_HAVE_TRACE
+    #if defined RELEASE && defined HPXMP_HAVE_TRACE
         std::cout<<"__omp_set_nest_lockl"<<std::endl;
     #endif
     start_backend();
@@ -987,7 +987,7 @@ void omp_set_nest_lock(omp_lock_t **lock) {
 }
 
 void omp_unset_lock(omp_lock_t **lock) {
-    #if defined DEBUG && defined HPXMP_HAVE_TRACE
+    #if defined RELEASE && defined HPXMP_HAVE_TRACE
         std::cout<<"__omp_unset_lock"<<std::endl;
     #endif
     start_backend();
@@ -995,7 +995,7 @@ void omp_unset_lock(omp_lock_t **lock) {
 }
 
 void omp_unset_nest_lock(omp_lock_t **lock) {
-    #if defined DEBUG && defined HPXMP_HAVE_TRACE
+    #if defined RELEASE && defined HPXMP_HAVE_TRACE
         std::cout<<"omp_unset_nest_lock"<<std::endl;
     #endif
     start_backend();

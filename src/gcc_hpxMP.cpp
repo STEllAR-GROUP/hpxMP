@@ -18,7 +18,7 @@ extern boost::shared_ptr<hpx_runtime> hpx_backend;
 void
 xexpand(KMP_API_NAME_GOMP_BARRIER)(void)
 {
-#if defined DEBUG && defined HPXMP_HAVE_TRACE
+#if defined RELEASE && defined HPXMP_HAVE_TRACE
     std::cout<<"KMP_API_NAME_GOMP_BARRIER"<<std::endl;
 #endif
     __kmpc_barrier(nullptr, 0);
@@ -42,7 +42,7 @@ xexpand(KMP_API_NAME_GOMP_BARRIER)(void)
 void
 xexpand(KMP_API_NAME_GOMP_CRITICAL_START)(void)
 {
-#if defined DEBUG && defined HPXMP_HAVE_TRACE
+#if defined RELEASE && defined HPXMP_HAVE_TRACE
     std::cout<<"KMP_API_NAME_GOMP_CRITICAL_START"<<std::endl;
 #endif
     __kmpc_critical(nullptr, 0, nullptr);
@@ -51,7 +51,7 @@ xexpand(KMP_API_NAME_GOMP_CRITICAL_START)(void)
 void
 xexpand(KMP_API_NAME_GOMP_CRITICAL_END)(void)
 {
-#if defined DEBUG && defined HPXMP_HAVE_TRACE
+#if defined RELEASE && defined HPXMP_HAVE_TRACE
     std::cout<<"KMP_API_NAME_GOMP_CRITICAL_END"<<std::endl;
 #endif
     __kmpc_end_critical(nullptr, 0, nullptr);
@@ -60,7 +60,7 @@ xexpand(KMP_API_NAME_GOMP_CRITICAL_END)(void)
 void
 xexpand(KMP_API_NAME_GOMP_CRITICAL_NAME_START)(void **pptr)
 {
-#if defined DEBUG && defined HPXMP_HAVE_TRACE
+#if defined RELEASE && defined HPXMP_HAVE_TRACE
     std::cout<<"KMP_API_NAME_GOMP_CRITICAL_NAME_START"<<std::endl;
 #endif
     __kmpc_critical(nullptr, 0, nullptr);
@@ -69,7 +69,7 @@ xexpand(KMP_API_NAME_GOMP_CRITICAL_NAME_START)(void **pptr)
 void
 xexpand(KMP_API_NAME_GOMP_CRITICAL_NAME_END)(void **pptr)
 {
-#if defined DEBUG && defined HPXMP_HAVE_TRACE
+#if defined RELEASE && defined HPXMP_HAVE_TRACE
     std::cout<<"KMP_API_NAME_GOMP_CRITICAL_NAME_END"<<std::endl;
 #endif
     __kmpc_end_critical(nullptr, 0, nullptr);
@@ -83,7 +83,7 @@ xexpand(KMP_API_NAME_GOMP_CRITICAL_NAME_END)(void **pptr)
 // not being called by gcc here and in openmp
 void xexpand(KMP_API_NAME_GOMP_ATOMIC_START)(void)
 {
-#if defined DEBUG && defined HPXMP_HAVE_TRACE
+#if defined RELEASE && defined HPXMP_HAVE_TRACE
     std::cout << "KMP_API_NAME_GOMP_ATOMIC_START" << std::endl;
 #endif
     __kmp_acquire_atomic_lock(&__kmp_atomic_lock, 0);
@@ -93,7 +93,7 @@ void xexpand(KMP_API_NAME_GOMP_ATOMIC_START)(void)
 void
 xexpand(KMP_API_NAME_GOMP_ATOMIC_END)(void)
 {
-#if defined DEBUG && defined HPXMP_HAVE_TRACE
+#if defined RELEASE && defined HPXMP_HAVE_TRACE
     std::cout << "KMP_API_NAME_GOMP_ATOMIC_END" << std::endl;
 #endif
     __kmp_release_atomic_lock(&__kmp_atomic_lock, 0);
@@ -102,7 +102,7 @@ xexpand(KMP_API_NAME_GOMP_ATOMIC_END)(void)
 int
 xexpand(KMP_API_NAME_GOMP_SINGLE_START)(void)
 {
-#if defined DEBUG && defined HPXMP_HAVE_TRACE
+#if defined RELEASE && defined HPXMP_HAVE_TRACE
     std::cout << "KMP_API_NAME_GOMP_SINGLE_START" << std::endl;
 #endif
     return __kmpc_single(nullptr, 0);
@@ -113,7 +113,7 @@ xexpand(KMP_API_NAME_GOMP_SINGLE_START)(void)
 
 void *xexpand(KMP_API_NAME_GOMP_SINGLE_COPY_START)(void)
 {
-#if defined DEBUG && defined HPXMP_HAVE_TRACE
+#if defined RELEASE && defined HPXMP_HAVE_TRACE
     std::cout << "KMP_API_NAME_GOMP_SINGLE_COPY_START" << std::endl;
 #endif
     void *retval;
@@ -142,7 +142,7 @@ void *xexpand(KMP_API_NAME_GOMP_SINGLE_COPY_START)(void)
 
 void xexpand(KMP_API_NAME_GOMP_SINGLE_COPY_END)(void *data)
 {
-#if defined DEBUG && defined HPXMP_HAVE_TRACE
+#if defined RELEASE && defined HPXMP_HAVE_TRACE
     std::cout << "KMP_API_NAME_GOMP_SINGLE_COPY_END" << std::endl;
 #endif
     //
@@ -160,7 +160,7 @@ void xexpand(KMP_API_NAME_GOMP_SINGLE_COPY_END)(void *data)
 void
 xexpand(KMP_API_NAME_GOMP_ORDERED_START)(void)
 {
-#if defined DEBUG && defined HPXMP_HAVE_TRACE
+#if defined RELEASE && defined HPXMP_HAVE_TRACE
     std::cout << "KMP_API_NAME_GOMP_ORDERED_START" << std::endl;
 #endif
     int gtid = hpx_backend->get_thread_num();
@@ -171,7 +171,7 @@ xexpand(KMP_API_NAME_GOMP_ORDERED_START)(void)
 void
 xexpand(KMP_API_NAME_GOMP_ORDERED_END)(void)
 {
-#if defined DEBUG && defined HPXMP_HAVE_TRACE
+#if defined RELEASE && defined HPXMP_HAVE_TRACE
     std::cout << "KMP_API_NAME_GOMP_ORDERED_END" << std::endl;
 #endif
     __kmpc_end_ordered(nullptr, 0);
@@ -187,7 +187,7 @@ static
 void
 __kmp_GOMP_microtask_wrapper(int *gtid, int *npr, void (*task)(void *),
                              void *data) {
-#if defined DEBUG && defined HPXMP_HAVE_TRACE
+#if defined RELEASE && defined HPXMP_HAVE_TRACE
     std::cout << "__kmp_GOMP_microtask_wrapper" << std::endl;
 #endif
     task(data);
@@ -203,7 +203,7 @@ __kmp_GOMP_parallel_microtask_wrapper(int *gtid, int *npr,
                                       enum sched_type schedule, long start,
                                       long end, long incr,
                                       long chunk_size) {
-#if defined DEBUG && defined HPXMP_HAVE_TRACE
+#if defined RELEASE && defined HPXMP_HAVE_TRACE
     std::cout << "__kmp_GOMP_parallel_microtask_wrapper" << std::endl;
 #endif
     // Intialize the loop worksharing construct.
@@ -218,7 +218,7 @@ static
 
 void
 __kmp_GOMP_fork_call(void(*unwrapped_task)(void *), microtask_t wrapper, int argc, ...) {
-#if defined DEBUG && defined HPXMP_HAVE_TRACE
+#if defined RELEASE && defined HPXMP_HAVE_TRACE
     std::cout << "__kmp_GOMP_fork_call" << std::endl;
 #endif
     va_list ap;
@@ -237,14 +237,14 @@ __kmp_GOMP_fork_call(void(*unwrapped_task)(void *), microtask_t wrapper, int arg
 
 static void
 __kmp_GOMP_serialized_parallel(ident_t *loc, kmp_int32 gtid, void (*task)(void *)){
-#if defined DEBUG && defined HPXMP_HAVE_TRACE
+#if defined RELEASE && defined HPXMP_HAVE_TRACE
     std::cout << "__kmp_GOMP_serialized_parallel" << std::endl;
 #endif
 }
 
 void
 xexpand(KMP_API_NAME_GOMP_PARALLEL_START)(void (*task)(void *), void *data, unsigned num_threads) {
-#if defined DEBUG && defined HPXMP_HAVE_TRACE
+#if defined RELEASE && defined HPXMP_HAVE_TRACE
     std::cout << "KMP_API_NAME_GOMP_PARALLEL_START" << std::endl;
 #endif
     HPX_ASSERT(false);
@@ -252,7 +252,7 @@ xexpand(KMP_API_NAME_GOMP_PARALLEL_START)(void (*task)(void *), void *data, unsi
 
 void
 xexpand(KMP_API_NAME_GOMP_PARALLEL_END)(void) {
-#if defined DEBUG && defined HPXMP_HAVE_TRACE
+#if defined RELEASE && defined HPXMP_HAVE_TRACE
     std::cout << "KMP_API_NAME_GOMP_PARALLEL_END" << std::endl;
 #endif
     HPX_ASSERT(false);
@@ -414,7 +414,7 @@ LOOP_NEXT(xexpand(KMP_API_NAME_GOMP_LOOP_ORDERED_RUNTIME_NEXT), \
 
 void
 xexpand(KMP_API_NAME_GOMP_LOOP_END)(void) {
-#if defined DEBUG && defined HPXMP_HAVE_TRACE
+#if defined RELEASE && defined HPXMP_HAVE_TRACE
     std::cout << "KMP_API_NAME_GOMP_LOOP_END" << std::endl;
 #endif
     int gtid = hpx_backend->get_thread_num();
@@ -423,7 +423,7 @@ xexpand(KMP_API_NAME_GOMP_LOOP_END)(void) {
 
 void
 xexpand(KMP_API_NAME_GOMP_LOOP_END_NOWAIT)(void) {
-#if defined DEBUG && defined HPXMP_HAVE_TRACE
+#if defined RELEASE && defined HPXMP_HAVE_TRACE
     std::cout << "KMP_API_NAME_GOMP_LOOP_END_NOWAIT" << std::endl;
 #endif
 }
@@ -556,7 +556,7 @@ PARALLEL_LOOP_START(xexpand(KMP_API_NAME_GOMP_PARALLEL_LOOP_RUNTIME_START),
 void
 xexpand(KMP_API_NAME_GOMP_TASK)(void (*func)(void *), void *data, void (*copy_func)(void *, void *),
                                 long arg_size, long arg_align, bool if_cond, unsigned gomp_flags,void **depend) {
-#if defined DEBUG && defined HPXMP_HAVE_TRACE
+#if defined RELEASE && defined HPXMP_HAVE_TRACE
     std::cout << "KMP_API_NAME_GOMP_TASK" << std::endl;
 #endif
     start_backend();
@@ -604,7 +604,7 @@ xexpand(KMP_API_NAME_GOMP_TASK)(void (*func)(void *), void *data, void (*copy_fu
 void
 xexpand(KMP_API_NAME_GOMP_TASKWAIT)(void)
 {
-#if defined DEBUG && defined HPXMP_HAVE_TRACE
+#if defined RELEASE && defined HPXMP_HAVE_TRACE
     std::cout << "KMP_API_NAME_GOMP_TASKWAIT" << std::endl;
 #endif
     __kmpc_omp_taskwait(nullptr, 0);
@@ -625,7 +625,7 @@ xexpand(KMP_API_NAME_GOMP_TASKWAIT)(void)
 
 unsigned
 xexpand(KMP_API_NAME_GOMP_SECTIONS_START)(unsigned count) {
-#if defined DEBUG && defined HPXMP_HAVE_TRACE
+#if defined RELEASE && defined HPXMP_HAVE_TRACE
     std::cout << "KMP_API_NAME_GOMP_SECTIONS_START" << std::endl;
 #endif
     HPX_ASSERT(false);
@@ -633,7 +633,7 @@ xexpand(KMP_API_NAME_GOMP_SECTIONS_START)(unsigned count) {
 
 unsigned
 xexpand(KMP_API_NAME_GOMP_SECTIONS_NEXT)(void) {
-#if defined DEBUG && defined HPXMP_HAVE_TRACE
+#if defined RELEASE && defined HPXMP_HAVE_TRACE
     std::cout << "KMP_API_NAME_GOMP_SECTIONS_NEXT" << std::endl;
 #endif
     int status;
@@ -652,7 +652,7 @@ xexpand(KMP_API_NAME_GOMP_SECTIONS_NEXT)(void) {
 void
 xexpand(KMP_API_NAME_GOMP_PARALLEL_SECTIONS_START)(void (*task) (void *), void *data,
                                                    unsigned num_threads, unsigned count) {
-#if defined DEBUG && defined HPXMP_HAVE_TRACE
+#if defined RELEASE && defined HPXMP_HAVE_TRACE
     std::cout << "KMP_API_NAME_GOMP_PARALLEL_SECTIONS_START" << std::endl;
 #endif
     HPX_ASSERT(false);
@@ -660,7 +660,7 @@ xexpand(KMP_API_NAME_GOMP_PARALLEL_SECTIONS_START)(void (*task) (void *), void *
 
 void
 xexpand(KMP_API_NAME_GOMP_SECTIONS_END)(void) {
-#if defined DEBUG && defined HPXMP_HAVE_TRACE
+#if defined RELEASE && defined HPXMP_HAVE_TRACE
     std::cout << "KMP_API_NAME_GOMP_SECTIONS_END" << std::endl;
 #endif
     int gtid = hpx_backend->get_thread_num();
@@ -669,7 +669,7 @@ xexpand(KMP_API_NAME_GOMP_SECTIONS_END)(void) {
 
 void
 xexpand(KMP_API_NAME_GOMP_SECTIONS_END_NOWAIT)(void) {
-#if defined DEBUG && defined HPXMP_HAVE_TRACE
+#if defined RELEASE && defined HPXMP_HAVE_TRACE
     std::cout << "KMP_API_NAME_GOMP_SECTIONS_END_NOWAIT" << std::endl;
 #endif
 }
@@ -677,7 +677,7 @@ xexpand(KMP_API_NAME_GOMP_SECTIONS_END_NOWAIT)(void) {
 // libgomp has an empty function for GOMP_taskyield as of 2013-10-10
 void
 xexpand(KMP_API_NAME_GOMP_TASKYIELD)(void) {
-#if defined DEBUG && defined HPXMP_HAVE_TRACE
+#if defined RELEASE && defined HPXMP_HAVE_TRACE
     std::cout << "KMP_API_NAME_GOMP_TASKYIELD" << std::endl;
 #endif
 }
@@ -688,7 +688,7 @@ xexpand(KMP_API_NAME_GOMP_TASKYIELD)(void) {
 
 void
 xexpand(KMP_API_NAME_GOMP_PARALLEL)(void (*task)(void *), void *data, unsigned num_threads, unsigned int flags) {
-#if defined DEBUG && defined HPXMP_HAVE_TRACE
+#if defined RELEASE && defined HPXMP_HAVE_TRACE
     std::cout << "KMP_API_NAME_GOMP_PARALLEL" << std::endl;
 #endif
 
@@ -707,7 +707,7 @@ xexpand(KMP_API_NAME_GOMP_PARALLEL)(void (*task)(void *), void *data, unsigned n
 void
 xexpand(KMP_API_NAME_GOMP_PARALLEL_SECTIONS)(void (*task) (void *), void *data,
                                              unsigned num_threads, unsigned count, unsigned flags) {
-#if defined DEBUG && defined HPXMP_HAVE_TRACE
+#if defined RELEASE && defined HPXMP_HAVE_TRACE
     std::cout << "KMP_API_NAME_GOMP_PARALLEL_SECTIONS" << std::endl;
 #endif
     //this is very similar to parallel loop
@@ -768,7 +768,7 @@ PARALLEL_LOOP(xexpand(KMP_API_NAME_GOMP_PARALLEL_LOOP_RUNTIME), kmp_sch_runtime,
 
 void
 xexpand(KMP_API_NAME_GOMP_TASKGROUP_START)(void) {
-#if defined DEBUG && defined HPXMP_HAVE_TRACE
+#if defined RELEASE && defined HPXMP_HAVE_TRACE
     std::cout << "KMP_API_NAME_GOMP_TASKGROUP_START" << std::endl;
 #endif
     __kmpc_taskgroup(nullptr, 0);
@@ -776,7 +776,7 @@ xexpand(KMP_API_NAME_GOMP_TASKGROUP_START)(void) {
 
 void
 xexpand(KMP_API_NAME_GOMP_TASKGROUP_END)(void) {
-#if defined DEBUG && defined HPXMP_HAVE_TRACE
+#if defined RELEASE && defined HPXMP_HAVE_TRACE
     std::cout << "KMP_API_NAME_GOMP_TASKGROUP_END" << std::endl;
 #endif
     __kmpc_end_taskgroup(nullptr, 0);
@@ -786,7 +786,7 @@ xexpand(KMP_API_NAME_GOMP_TASKGROUP_END)(void) {
 static
 #endif
 kmp_int32 __kmp_gomp_to_omp_cancellation_kind(int gomp_kind) {
-#if defined DEBUG && defined HPXMP_HAVE_TRACE
+#if defined RELEASE && defined HPXMP_HAVE_TRACE
     std::cout << "__kmp_gomp_to_omp_cancellation_kind" << std::endl;
 #endif
     kmp_int32 cncl_kind = 0;
@@ -809,7 +809,7 @@ kmp_int32 __kmp_gomp_to_omp_cancellation_kind(int gomp_kind) {
 
 bool
 xexpand(KMP_API_NAME_GOMP_CANCELLATION_POINT)(int which) {
-#if defined DEBUG && defined HPXMP_HAVE_TRACE
+#if defined RELEASE && defined HPXMP_HAVE_TRACE
     std::cout << "KMP_API_NAME_GOMP_CANCELLATION_POINT" << std::endl;
 #endif
     HPX_ASSERT(false);
@@ -818,7 +818,7 @@ xexpand(KMP_API_NAME_GOMP_CANCELLATION_POINT)(int which) {
 
 bool
 xexpand(KMP_API_NAME_GOMP_BARRIER_CANCEL)(void) {
-#if defined DEBUG && defined HPXMP_HAVE_TRACE
+#if defined RELEASE && defined HPXMP_HAVE_TRACE
     std::cout << "KMP_API_NAME_GOMP_BARRIER_CANCEL" << std::endl;
 #endif
     return __kmpc_cancel_barrier(nullptr, 0);
@@ -826,7 +826,7 @@ xexpand(KMP_API_NAME_GOMP_BARRIER_CANCEL)(void) {
 
 bool
 xexpand(KMP_API_NAME_GOMP_CANCEL)(int which, bool do_cancel) {
-#if defined DEBUG && defined HPXMP_HAVE_TRACE
+#if defined RELEASE && defined HPXMP_HAVE_TRACE
     std::cout << "KMP_API_NAME_GOMP_CANCEL" << std::endl;
 #endif
     HPX_ASSERT(false);
@@ -835,7 +835,7 @@ xexpand(KMP_API_NAME_GOMP_CANCEL)(int which, bool do_cancel) {
 
 bool
 xexpand(KMP_API_NAME_GOMP_SECTIONS_END_CANCEL)(void) {
-#if defined DEBUG && defined HPXMP_HAVE_TRACE
+#if defined RELEASE && defined HPXMP_HAVE_TRACE
     std::cout << "KMP_API_NAME_GOMP_SECTIONS_END_CANCEL" << std::endl;
 #endif
     return __kmpc_cancel_barrier(nullptr, 0);
@@ -843,7 +843,7 @@ xexpand(KMP_API_NAME_GOMP_SECTIONS_END_CANCEL)(void) {
 
 bool
 xexpand(KMP_API_NAME_GOMP_LOOP_END_CANCEL)(void) {
-#if defined DEBUG && defined HPXMP_HAVE_TRACE
+#if defined RELEASE && defined HPXMP_HAVE_TRACE
     std::cout << "KMP_API_NAME_GOMP_LOOP_END_CANCEL" << std::endl;
 #endif
     return __kmpc_cancel_barrier(nullptr, 0);
@@ -855,7 +855,7 @@ void
 xexpand(KMP_API_NAME_GOMP_TARGET)(int device, void (*fn) (void *), const void *openmp_target,
                                   size_t mapnum, void **hostaddrs, size_t *sizes, unsigned char *kinds)
 {
-#if defined DEBUG && defined HPXMP_HAVE_TRACE
+#if defined RELEASE && defined HPXMP_HAVE_TRACE
     std::cout << "KMP_API_NAME_GOMP_TARGET" << std::endl;
 #endif
     return;
@@ -865,7 +865,7 @@ void
 xexpand(KMP_API_NAME_GOMP_TARGET_DATA)(int device, const void *openmp_target, size_t mapnum,
                                        void **hostaddrs, size_t *sizes, unsigned char *kinds)
 {
-#if defined DEBUG && defined HPXMP_HAVE_TRACE
+#if defined RELEASE && defined HPXMP_HAVE_TRACE
     std::cout << "KMP_API_NAME_GOMP_TARGET_DATA" << std::endl;
 #endif
     return;
@@ -874,7 +874,7 @@ xexpand(KMP_API_NAME_GOMP_TARGET_DATA)(int device, const void *openmp_target, si
 void
 xexpand(KMP_API_NAME_GOMP_TARGET_END_DATA)(void)
 {
-#if defined DEBUG && defined HPXMP_HAVE_TRACE
+#if defined RELEASE && defined HPXMP_HAVE_TRACE
     std::cout << "KMP_API_NAME_GOMP_TARGET_END_DATA" << std::endl;
 #endif
     return;
@@ -884,7 +884,7 @@ void
 xexpand(KMP_API_NAME_GOMP_TARGET_UPDATE)(int device, const void *openmp_target, size_t mapnum,
                                          void **hostaddrs, size_t *sizes, unsigned char *kinds)
 {
-#if defined DEBUG && defined HPXMP_HAVE_TRACE
+#if defined RELEASE && defined HPXMP_HAVE_TRACE
     std::cout << "KMP_API_NAME_GOMP_TARGET_UPDATE" << std::endl;
 #endif
     return;
@@ -893,7 +893,7 @@ xexpand(KMP_API_NAME_GOMP_TARGET_UPDATE)(int device, const void *openmp_target, 
 void
 xexpand(KMP_API_NAME_GOMP_TEAMS)(unsigned int num_teams, unsigned int thread_limit)
 {
-#if defined DEBUG && defined HPXMP_HAVE_TRACE
+#if defined RELEASE && defined HPXMP_HAVE_TRACE
     std::cout << "KMP_API_NAME_GOMP_TEAMS" << std::endl;
 #endif
     return;
