@@ -616,7 +616,7 @@ void fork_worker( invoke_func kmp_invoke, microtask_t thread_func,
     hpxmp_latch threadLatch(running_threads+1);
 
     for( int i = 0; i < parent->threads_requested; i++ ) {
-        hpx::applier::register_thread_nullary(
+        hpx::applier::register_non_suspendable_thread_nullary(
                 std::bind( &thread_setup, kmp_invoke, thread_func, argc, argv, i, &team, parent,
                            boost::ref(threadLatch)),
                 "omp_implicit_task", hpx::threads::pending,
