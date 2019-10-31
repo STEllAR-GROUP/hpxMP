@@ -14,14 +14,16 @@ set(hpxmp_sources
         src/hpx_runtime.cpp
         src/kmp_atomic.cpp
         src/loop_schedule.cpp
-        src/gcc_hpxMP.cpp)
+        src/gcc_hpxMP.cpp
+        src/thread_pool.cpp)
 
 set(hpxmp_headers
         src/intel_hpxMP.h
         src/hpx_runtime.h
         src/kmp_atomic.h
         src/loop_schedule.h
-        src/gcc_hpxMP.h)
+        src/gcc_hpxMP.h
+        src/thread_pool.h)
 
 set(HPXMP_WITH_TRACE OFF CACHE BOOL "display traces in debug mode")
 if(HPXMP_WITH_TRACE)
