@@ -1,4 +1,3 @@
-#include "thread_pool.h"
 //  Copyright (c) 2019 Hartmut Kaiser
 //
 //  SPDX-License-Identifier: BSL-1.0
@@ -7,6 +6,8 @@
 
 // This example creates a pool of HPX threads and uses it to submit functions
 // to the underlying scheduler.
+
+#include "thread_pool.h"
 
 ////////////////////////////////////////////////////////////////////////////////
 thread_pool::thread_pool(std::size_t num_threads)
