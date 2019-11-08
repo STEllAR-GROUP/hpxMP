@@ -356,9 +356,9 @@ ompt_start_tool_result_t* ompt_start_tool(unsigned int omp_version,
     const char* runtime_version)
 {
     printf("ompt_start_tool\n");
-    static ompt_start_tool_result_t ompt_start_tool_result = {
-        &ompt_initialize, &ompt_finalize, 0};
-    return &ompt_start_tool_result;
+    //static ompt_start_tool_result_t ompt_start_tool_result = {
+    //    &ompt_initialize, &ompt_finalize, 0};
+    //return &ompt_start_tool_result;
 }
 
 int do_generic_test()

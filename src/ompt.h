@@ -325,10 +325,13 @@ typedef enum ompt_task_flag_t {
 } ompt_task_flag_t;
 
 typedef enum ompt_task_status_t {
-    ompt_task_complete = 1,
-    ompt_task_yield    = 2,
-    ompt_task_cancel   = 3,
-    ompt_task_switch   = 4
+    ompt_task_complete      = 1,
+    ompt_task_yield         = 2,
+    ompt_task_cancel        = 3,
+    ompt_task_detach        = 4,
+    ompt_task_early_fulfill = 5,
+    ompt_task_late_fulfill  = 6,
+    ompt_task_switch        = 7
 } ompt_task_status_t;
 
 typedef void (*ompt_callback_task_schedule_t) (
@@ -632,6 +635,7 @@ OMPT_API_FUNCTION(int, ompt_get_proc_id, (void));
 
 OMPT_API_FUNCTION(int, ompt_initialize, (
         ompt_function_lookup_t lookup,
+        int initial_device_num,
         ompt_data_t *tool_data
 ));
 

@@ -186,7 +186,7 @@ void ompt_post_init()
     if (ompt_start_tool_result)
     {
         ompt_enabled.enabled = !!ompt_start_tool_result->initialize(
-            ompt_fn_lookup, &(ompt_start_tool_result->tool_data));
+            ompt_fn_lookup, 0, &(ompt_start_tool_result->tool_data));
 
         if (!ompt_enabled.enabled)
         {
