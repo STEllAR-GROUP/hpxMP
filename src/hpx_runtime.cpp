@@ -278,7 +278,7 @@ void task_setup( int gtid, intrusive_ptr<kmp_task_t> kmp_task_ptr, intrusive_ptr
         ompt_callbacks.ompt_callback(ompt_callback_task_create)(NULL, NULL,
             my_task_data, ompt_task_explicit, 0, __builtin_return_address(0));
     }
-    ompt_task_status_t status = ompt_task_others;
+    ompt_task_status_t status = ompt_task_yield;
     /* let OMPT know that we're about to run this task */
     ompt_data_t *prior_task_data =
         &hpx_backend->get_task_data()->team->parent_data;
@@ -598,13 +598,13 @@ void fork_worker( invoke_func kmp_invoke, microtask_t thread_func,
     parallel_region team(parent->team, parent->threads_requested);
 #if HPXMP_HAVE_OMPT
     //TODO:HOW TO FIND OUT INVOKER
-    ompt_invoker_t a = ompt_invoker_runtime;
+    //ompt_invoker_t a = ompt_invoker_runtime;
     if (ompt_enabled.enabled) {
         if (ompt_enabled.ompt_callback_parallel_begin) {
             int team_size = parent->threads_requested;
             ompt_callbacks.ompt_callback(ompt_callback_parallel_begin)(
                     NULL, NULL,&team.parallel_data, team_size,
-                    a,__builtin_return_address(0));
+                    0,__builtin_return_address(0));
         }
     }
 #endif
@@ -629,7 +629,7 @@ void fork_worker( invoke_func kmp_invoke, microtask_t thread_func,
 #if HPXMP_HAVE_OMPT
     if (ompt_enabled.ompt_callback_parallel_end) {
         ompt_callbacks.ompt_callback(ompt_callback_parallel_end)(
-                &team.parallel_data,NULL,a,
+                &team.parallel_data,NULL,0,
                 __builtin_return_address(0));
     }
 #endif

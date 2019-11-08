@@ -57,7 +57,7 @@ typedef struct ompt_callbacks_active_s
 
 typedef struct
 {
-    omp_frame_t frame;
+    ompt_frame_t frame;
     ompt_data_t task_data;
     struct kmp_taskdata* scheduling_parent;
     int thread_num;
@@ -87,8 +87,8 @@ typedef struct
     ompt_data_t task_data; /* stored here from implicit barrier-begin until
                             implicit-task-end */
     void* return_address;  /* stored here on entry of runtime */
-    omp_state_t state;
-    omp_wait_id_t wait_id;
+    ompt_state_t state;
+    ompt_wait_id_t wait_id;
     int ompt_task_yielded;
     void* idle_frame;
 } ompt_thread_info_t;
@@ -135,12 +135,12 @@ extern ompt_callbacks_active_t ompt_enabled;
 /*****************************************************************************
  * types from ompt-specific.h
  ***************************************************************************/
-typedef omp_task_data ompt_thread_t;
+//typedef omp_task_data ompt_thread_t;
 extern boost::shared_ptr<hpx_runtime> hpx_backend;
 ompt_data_t *__ompt_get_thread_data_internal();
 ompt_data_t* __ompt_get_parallel_data_internal();
 int __ompt_get_task_info_internal(int ancestor_level, int* type,
-    ompt_data_t** task_data, omp_frame_t** task_frame,
+    ompt_data_t** task_data, ompt_frame_t** task_frame,
     ompt_data_t** parallel_data, int* thread_num);
 
 /*****************************************************************************

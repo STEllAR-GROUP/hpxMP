@@ -46,7 +46,7 @@
 typedef struct
 {
     const char* state_name;
-    omp_state_t state_id;
+    ompt_state_t state_id;
 } omp_state_info_t;
 
 typedef struct
@@ -70,8 +70,8 @@ enum tool_setting_e
 ompt_callbacks_active_t ompt_enabled;
 
 omp_state_info_t omp_state_info[] = {
-#define omp_state_macro(state, code) {#state, state},
-    FOREACH_OMP_STATE(omp_state_macro)
+//#define omp_state_macro(state, code) {#state, state},
+   // FOREACH_OMP_STATE(omp_state_macro)
 #undef omp_state_macro
 };
 

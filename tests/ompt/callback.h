@@ -79,7 +79,7 @@ static ompt_set_callback_t ompt_set_callback;
 static ompt_get_unique_id_t ompt_get_unique_id;
 static ompt_get_thread_data_t ompt_get_thread_data;
 
-static void on_ompt_callback_thread_begin(ompt_thread_type_t thread_type,
+static void on_ompt_callback_thread_begin(ompt_thread_t thread_type,
     ompt_data_t* thread_data)
 {
     std::lock_guard<std::mutex> lock(get_mutex());
@@ -104,7 +104,7 @@ static void on_ompt_callback_thread_end(ompt_data_t* thread_data)
 }
 
 static void on_ompt_callback_parallel_begin(ompt_data_t* encountering_task_data,
-    const omp_frame_t* encountering_task_frame,
+    const ompt_frame_t* encountering_task_frame,
     ompt_data_t* parallel_data,
     uint32_t requested_team_size,
     ompt_invoker_t invoker,
@@ -144,7 +144,7 @@ static void on_ompt_callback_parallel_end(ompt_data_t* parallel_data,
 }
 
 static void on_ompt_callback_task_create(ompt_data_t* encountering_task_data,
-    const omp_frame_t* encountering_task_frame,
+    const ompt_frame_t* encountering_task_frame,
     ompt_data_t* new_task_data,
     int type,
     int has_dependences,
@@ -229,7 +229,7 @@ static void on_ompt_callback_implicit_task(ompt_scope_endpoint_t endpoint,
     }
 }
 
-static void on_ompt_callback_sync_region_wait(ompt_sync_region_kind_t kind,
+static void on_ompt_callback_sync_region_wait(ompt_sync_region_t kind,
     ompt_scope_endpoint_t endpoint,
     ompt_data_t* parallel_data,
     ompt_data_t* task_data,
@@ -336,8 +336,8 @@ int ompt_initialize(ompt_function_lookup_t lookup, ompt_data_t* tool_data)
 
     //    register_callback(ompt_callback_thread_begin);
     //    register_callback(ompt_callback_thread_end);
-    register_callback(ompt_callback_parallel_begin);
-    register_callback(ompt_callback_parallel_end);
+    //register_callback(ompt_callback_parallel_begin);
+    //register_callback(ompt_callback_parallel_end);
     register_callback(ompt_callback_task_create);
     register_callback(ompt_callback_task_schedule);
     register_callback(ompt_callback_implicit_task);

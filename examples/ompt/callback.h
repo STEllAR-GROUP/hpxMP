@@ -44,7 +44,7 @@ static ompt_set_callback_t ompt_set_callback;
 static ompt_get_unique_id_t ompt_get_unique_id;
 static ompt_get_thread_data_t ompt_get_thread_data;
 
-static void on_ompt_callback_thread_begin(ompt_thread_type_t thread_type,
+static void on_ompt_callback_thread_begin(ompt_thread_t thread_type,
     ompt_data_t* thread_data)
 {
     if (thread_data->ptr)
@@ -64,10 +64,10 @@ static void on_ompt_callback_thread_end(ompt_data_t* thread_data)
 }
 
 static void on_ompt_callback_parallel_begin(ompt_data_t* encountering_task_data,
-    const omp_frame_t* encountering_task_frame,
+    const ompt_frame_t* encountering_task_frame,
     ompt_data_t* parallel_data,
     uint32_t requested_team_size,
-    ompt_invoker_t invoker,
+    int invoker,
     const void* codeptr_ra)
 {
     if (parallel_data->ptr)
@@ -83,7 +83,7 @@ static void on_ompt_callback_parallel_begin(ompt_data_t* encountering_task_data,
 
 static void on_ompt_callback_parallel_end(ompt_data_t* parallel_data,
     ompt_data_t* encountering_task_data,
-    ompt_invoker_t invoker,
+    int invoker,
     const void* codeptr_ra)
 {
     printf("ompt_event_parallel_end: parallel_id=%" PRIu64
@@ -93,8 +93,9 @@ static void on_ompt_callback_parallel_end(ompt_data_t* parallel_data,
         invoker);
 }
 
+
 static void on_ompt_callback_task_create(ompt_data_t* encountering_task_data,
-    const omp_frame_t* encountering_task_frame,
+    const ompt_frame_t* encountering_task_frame,
     ompt_data_t* new_task_data,
     int type,
     int has_dependences,

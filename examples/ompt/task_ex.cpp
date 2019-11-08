@@ -17,7 +17,7 @@ int main(int argc, char* argv[])
     {
 #pragma omp single
         {
-            omp_wait_id_t tid;
+            ompt_wait_id_t tid;
             tid = omp_get_thread_num();
 #pragma omp task
             {
