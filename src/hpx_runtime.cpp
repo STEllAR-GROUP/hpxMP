@@ -614,19 +614,22 @@ void fork_worker( invoke_func kmp_invoke, microtask_t thread_func,
 #endif
     int running_threads = parent->threads_requested;
     hpxmp_latch threadLatch(running_threads+1);
+#if HPXMP_HAVE_POOL
     hpx_backend->TPool.enlarge(running_threads);
     for( int i = 0; i < running_threads; i++ ) {
         hpx_backend->TPool.enqueue( &thread_setup, kmp_invoke, thread_func, argc, argv, i, &team, parent,
                                     boost::ref(threadLatch));
     }
-//    for( int i = 0; i < parent->threads_requested; i++ ) {
-//        hpx::applier::register_thread_nullary(
-//                std::bind( &thread_setup, kmp_invoke, thread_func, argc, argv, i, &team, parent,
-//                           boost::ref(threadLatch)),
-//                "omp_implicit_task", hpx::threads::pending,
-//                true, hpx::threads::thread_priority_low, i );
-//                //true, hpx::threads::thread_priority_normal, i );
-//    }
+#else
+    for( int i = 0; i < parent->threads_requested; i++ ) {
+        hpx::applier::register_thread_nullary(
+                std::bind( &thread_setup, kmp_invoke, thread_func, argc, argv, i, &team, parent,
+                           boost::ref(threadLatch)),
+                "omp_implicit_task", hpx::threads::pending,
+                true, hpx::threads::thread_priority_low, i );
+                //true, hpx::threads::thread_priority_normal, i );
+    }
+#endif
     threadLatch.count_down_and_wait();
     // wait for all the tasks in the team to finish
     team.teamTaskLatch.wait();

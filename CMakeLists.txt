@@ -14,16 +14,14 @@ set(hpxmp_sources
         src/hpx_runtime.cpp
         src/kmp_atomic.cpp
         src/loop_schedule.cpp
-        src/gcc_hpxMP.cpp
-        src/thread_pool.cpp)
+        src/gcc_hpxMP.cpp)
 
 set(hpxmp_headers
         src/intel_hpxMP.h
         src/hpx_runtime.h
         src/kmp_atomic.h
         src/loop_schedule.h
-        src/gcc_hpxMP.h
-        src/thread_pool.h)
+        src/gcc_hpxMP.h)
 
 set(HPXMP_WITH_TRACE OFF CACHE BOOL "display traces in debug mode")
 if(HPXMP_WITH_TRACE)
@@ -40,6 +38,16 @@ if(HPXMP_WITH_OMPT)
             src/ompt.h
             src/ompt-event-specific.h
             src/ompt-internal.h)
+endif()
+
+set(HPXMP_WITH_POOL OFF CACHE BOOL "ompt support for hpxmp")
+if(HPXMP_WITH_POOL)
+    add_definitions(-DHPXMP_HAVE_POOL=1)
+    set(hpxmp_sources
+            ${hpxmp_sources}
+            src/thread_pool.cpp)
+    set(hpxmp_headers ${hpxmp_headers}
+            src/thread_pool.h)
 endif()
 
 set(HPXMP_WITH_OMP_50_ENABLED OFF CACHE BOOL "enable openmp 5.0 features in hpxmp")

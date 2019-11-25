@@ -34,10 +34,11 @@
 #include <hpx/timing/high_resolution_timer.hpp>
 #include <map>
 
-#include "thread_pool.h"
 #include "icv-vars.h"
 #include "ompt.h"
-
+#if HPXMP_HAVE_POOL
+#include "thread_pool.h"
+#endif
 
 using std::atomic;
 using boost::shared_ptr;
@@ -371,7 +372,9 @@ class hpx_runtime {
         void** get_threadprivate();
         bool start_taskgroup();
         void end_taskgroup();
+#if HPXMP_HAVE_POOL
         thread_pool TPool;
+#endif
 
     private:
         shared_ptr<parallel_region> implicit_region;
