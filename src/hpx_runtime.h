@@ -36,7 +36,9 @@
 
 #include "icv-vars.h"
 #include "ompt.h"
-
+#if HPXMP_HAVE_POOL
+#include "thread_pool.h"
+#endif
 
 using std::atomic;
 using boost::shared_ptr;
@@ -355,6 +357,7 @@ class hpx_runtime {
         void create_df_task( int gtid, kmp_task_t *thunk,
                              int ndeps, kmp_depend_info_t *dep_list,
                              int ndeps_noalias, kmp_depend_info_t *noalias_dep_list );
+        ~hpx_runtime()=default;
 
 #ifdef FUTURIZE_TASKS
         void create_future_task( int gtid, kmp_task_t *thunk,
@@ -369,6 +372,9 @@ class hpx_runtime {
         void** get_threadprivate();
         bool start_taskgroup();
         void end_taskgroup();
+#if HPXMP_HAVE_POOL
+        thread_pool TPool;
+#endif
 
     private:
         shared_ptr<parallel_region> implicit_region;
@@ -377,7 +383,6 @@ class hpx_runtime {
         shared_ptr<high_resolution_timer> walltime;
         bool external_hpx;
         omp_device_icv device_icv;
-
         //atomic<int> threads_running{0};//ThreadsBusy
 };
 
