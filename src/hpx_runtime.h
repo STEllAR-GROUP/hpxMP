@@ -14,9 +14,9 @@
 
 #include <hpx/hpx.hpp>
 #include <hpx/hpx_start.hpp>
-#include <hpx/runtime/threads/topology.hpp>
+#include <hpx/topology/topology.hpp>
 #include <hpx/lcos/local/barrier.hpp>
-#include <hpx/util/static.hpp>
+#include <hpx/type_support/static.hpp>
 #include <hpx/include/lcos.hpp>
 #include <hpx/lcos/local/condition_variable.hpp>
 
@@ -31,12 +31,14 @@
 //#include <boost/thread/mutex.hpp>
 //#include <boost/thread/condition.hpp>
 
-#include <hpx/util/high_resolution_timer.hpp>
+#include <hpx/timing/high_resolution_timer.hpp>
 #include <map>
 
 #include "icv-vars.h"
 #include "ompt.h"
-
+#if HPXMP_HAVE_POOL
+#include "thread_pool.h"
+#endif
 
 using std::atomic;
 using boost::shared_ptr;
@@ -271,7 +273,7 @@ class omp_task_data {
 
         //This is for explicit tasks
         omp_task_data(int tid, parallel_region *T, omp_icv icv_vars)
-            : local_thread_num(tid), team(T), icv(icv_vars),taskLatch(0)
+            : local_thread_num(tid), team(T), taskLatch(0), icv(icv_vars)
         {
             threads_requested = icv.nthreads;
             icv_vars.device = icv.device;
@@ -355,6 +357,7 @@ class hpx_runtime {
         void create_df_task( int gtid, kmp_task_t *thunk,
                              int ndeps, kmp_depend_info_t *dep_list,
                              int ndeps_noalias, kmp_depend_info_t *noalias_dep_list );
+        ~hpx_runtime()=default;
 
 #ifdef FUTURIZE_TASKS
         void create_future_task( int gtid, kmp_task_t *thunk,
@@ -369,6 +372,9 @@ class hpx_runtime {
         void** get_threadprivate();
         bool start_taskgroup();
         void end_taskgroup();
+#if HPXMP_HAVE_POOL
+        thread_pool TPool;
+#endif
 
     private:
         shared_ptr<parallel_region> implicit_region;
@@ -377,7 +383,6 @@ class hpx_runtime {
         shared_ptr<high_resolution_timer> walltime;
         bool external_hpx;
         omp_device_icv device_icv;
-
         //atomic<int> threads_running{0};//ThreadsBusy
 };
 

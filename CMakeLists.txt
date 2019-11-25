@@ -40,6 +40,16 @@ if(HPXMP_WITH_OMPT)
             src/ompt-internal.h)
 endif()
 
+set(HPXMP_WITH_POOL OFF CACHE BOOL "ompt support for hpxmp")
+if(HPXMP_WITH_POOL)
+    add_definitions(-DHPXMP_HAVE_POOL=1)
+    set(hpxmp_sources
+            ${hpxmp_sources}
+            src/thread_pool.cpp)
+    set(hpxmp_headers ${hpxmp_headers}
+            src/thread_pool.h)
+endif()
+
 set(HPXMP_WITH_OMP_50_ENABLED OFF CACHE BOOL "enable openmp 5.0 features in hpxmp")
 if(HPXMP_WITH_OMP_50_ENABLED)
     add_definitions(-DHPXMP_HAVE_OMP_50_ENABLED)
@@ -79,7 +89,7 @@ if(NOT HPX_WITH_HPXMP)
         target_link_libraries(hpxmp PRIVATE -L${dir})
     endforeach()
 
-    target_link_libraries(hpxmp PRIVATE ${HPX_LIBRARIES} hpx_preprocessor)
+    target_link_libraries(hpxmp PRIVATE ${HPX_LIBRARIES})
 
 else()
 
@@ -97,3 +107,6 @@ endif()
 add_subdirectory(examples)
 add_subdirectory(tests)
 enable_testing()
+
+find_package(Boost)
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -L${Boost_LIBRARY_DIRS}")

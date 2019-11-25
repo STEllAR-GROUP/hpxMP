@@ -22,6 +22,7 @@ set(tests
         for_static
         master
         max_threads
+        omp_set_get_nested
         par_for
         par_nested
         par_single
@@ -52,45 +53,22 @@ macro(do_test name)
             CXX_STANDARD_REQUIRED ON
             CXX_EXTENSIONS OFF
             )
-        #maybe make the omp_num_threads configurable later
     set_tests_properties(${name} PROPERTIES
             ENVIRONMENT "LD_PRELOAD=${PROJECT_BINARY_DIR}/libhpxmp.so;OMP_NUM_THREADS=2"
             TIMEOUT 50
             )
 endmacro(do_test)
 
-macro(do_test_enhanced name)
-    add_test(${name} ${name})
-    set_target_properties(${name} PROPERTIES
-            CXX_STANDARD 11
-            CXX_STANDARD_REQUIRED ON
-            CXX_EXTENSIONS OFF
-            )
-    #maybe make the omp_num_threads configurable later
-    set_tests_properties(${name} PROPERTIES
-            ENVIRONMENT "LD_PRELOAD=${PROJECT_BINARY_DIR}/libhpxmp.so;OMP_NUM_THREADS=2"
-            TIMEOUT 60
-            )
-endmacro(do_test_enhanced)
-
-
-
 foreach(test ${tests})
     set(sources ${test}.cpp)
-    add_executable(${test} ${sources})
-    do_test(${test})
-endforeach()
-
-foreach(test ${tests_enhanced})
-    set(sources ${test}.cpp)
-    add_executable(${test} ${sources})
-    do_test_enhanced(${test})
+    add_executable(tests.omp.unit.${test} ${sources})
+    do_test(tests.omp.unit.${test})
 endforeach()
 
 if(HPXMP_WITH_OMP_50_ENABLED)
     foreach(test ${tests_omp50})
         set(sources ${test}.cpp)
-        add_executable(${test} ${sources})
-        do_test_enhanced(${test})
+        add_executable(tests.omp.unit.${test} ${sources})
+        do_test(tests.omp.unit.${test})
     endforeach()
 endif()

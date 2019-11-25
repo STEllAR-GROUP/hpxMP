@@ -13,6 +13,7 @@
 // being compiled as part of HPX itself
 #include <hpx/hpx_start_impl.hpp>
 #include <hpx/runtime/threads/run_as_hpx_thread.hpp>
+#include <hpx/program_options/options_description.hpp>
 
 using std::cout;
 using std::endl;
@@ -48,6 +49,7 @@ void fini_runtime()
 #endif
     std::this_thread::sleep_for(std::chrono::milliseconds(50));
     //this should only be done if this runtime started hpx
+    hpx::threads::run_as_hpx_thread([]() { hpx_backend.reset(); });
     hpx::threads::run_as_hpx_thread([]() { hpx::finalize(); });
     hpx::stop();
 #if defined DEBUG
@@ -55,7 +57,7 @@ void fini_runtime()
 #endif
 }
 
-void start_hpx(int initial_num_threads)
+void start_hpx(size_t initial_num_threads)
 {
 #ifdef OMP_COMPLIANT
     int num_hard_coded_args = 2;
@@ -97,12 +99,11 @@ void start_hpx(int initial_num_threads)
     argv[1] = const_cast<char*>("--hpx:queuing=static");
 #endif
     hpx::util::function_nonser<int(boost::program_options::variables_map& vm)> f;
-    boost::program_options::options_description desc_cmdline;
+    hpx::program_options::options_description desc_cmdline;
 
     std::mutex startup_mtx;
     std::condition_variable cond;//TODO: replace this with something that can be checked later, once hpx is needed.
     bool running = false;
-
     hpx::start(f, desc_cmdline, argc, argv, cfg,
             std::bind(&wait_for_startup, boost::ref(startup_mtx), boost::ref(cond), boost::ref(running)));
 
@@ -129,7 +130,6 @@ hpx_runtime::hpx_runtime()
     } else {
         initial_num_threads = num_procs;
     }
-
     external_hpx = hpx::get_runtime_ptr();
     if(external_hpx){
         //It doesn't make much sense to try and use openMP thread settings
@@ -261,14 +261,14 @@ void hpx_runtime::end_taskgroup()
 void hpx_runtime::task_wait()
 {
     auto task = get_task_data();
-    intrusive_ptr task_ptr(task);
+    intrusive_ptr<omp_task_data> task_ptr(task);
     task_ptr->taskLatch.wait();
 }
 
 void task_setup( int gtid, intrusive_ptr<kmp_task_t> kmp_task_ptr, intrusive_ptr<omp_task_data> parent_task_ptr)
 {
     auto task_func = kmp_task_ptr->routine;
-    intrusive_ptr current_task_ptr(new omp_task_data(gtid, parent_task_ptr->team, parent_task_ptr->icv));
+    intrusive_ptr<omp_task_data> current_task_ptr(new omp_task_data(gtid, parent_task_ptr->team, parent_task_ptr->icv));
     set_thread_data( get_self_id(), reinterpret_cast<size_t>(current_task_ptr.get()));
 #if HPXMP_HAVE_OMPT
     ompt_data_t *my_task_data = &hpx_backend->get_task_data()->task_data;
@@ -355,6 +355,7 @@ void hpx_runtime::create_task( kmp_routine_entry_t task_func, int gtid, intrusiv
         if(current_task_ptr->in_taskgroup)
             current_task_ptr->taskgroupLatch->count_up(1);
         //this fixes hpx::apply changes in hpx backend
+        //TPool.enqueue(&task_setup, gtid, kmp_task_ptr, current_task_ptr);
         hpx::applier::register_thread_nullary(
             std::bind(&task_setup, gtid, kmp_task_ptr, current_task_ptr),
             "omp_explicit_task", hpx::threads::pending, true,
@@ -549,7 +550,7 @@ void thread_setup( invoke_func kmp_invoke, microtask_t thread_func,
                    parallel_region *team, intrusive_ptr<omp_task_data> parent,
                    hpxmp_latch& threadLatch)
 {
-    intrusive_ptr task_data_ptr(new omp_task_data(tid, team, parent.get()));
+    intrusive_ptr<omp_task_data> task_data_ptr(new omp_task_data(tid, team, parent.get()));
 
     set_thread_data( get_self_id(), reinterpret_cast<size_t>(task_data_ptr.get()));
 
@@ -613,7 +614,13 @@ void fork_worker( invoke_func kmp_invoke, microtask_t thread_func,
 #endif
     int running_threads = parent->threads_requested;
     hpxmp_latch threadLatch(running_threads+1);
-
+#if HPXMP_HAVE_POOL
+    hpx_backend->TPool.enlarge(running_threads);
+    for( int i = 0; i < running_threads; i++ ) {
+        hpx_backend->TPool.enqueue( &thread_setup, kmp_invoke, thread_func, argc, argv, i, &team, parent,
+                                    boost::ref(threadLatch));
+    }
+#else
     for( int i = 0; i < parent->threads_requested; i++ ) {
         hpx::applier::register_thread_nullary(
                 std::bind( &thread_setup, kmp_invoke, thread_func, argc, argv, i, &team, parent,
@@ -622,6 +629,7 @@ void fork_worker( invoke_func kmp_invoke, microtask_t thread_func,
                 true, hpx::threads::thread_priority_low, i );
                 //true, hpx::threads::thread_priority_normal, i );
     }
+#endif
     threadLatch.count_down_and_wait();
     // wait for all the tasks in the team to finish
     team.teamTaskLatch.wait();

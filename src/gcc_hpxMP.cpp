@@ -11,7 +11,7 @@
 #include <boost/shared_ptr.hpp>
 #include <iostream>
 #include <assert.h>
-#include <hpx/util/assert.hpp>
+#include <hpx/assertion.hpp>
 
 extern boost::shared_ptr<hpx_runtime> hpx_backend;
 
@@ -291,7 +291,7 @@ xexpand(KMP_API_NAME_GOMP_PARALLEL_END)(void) {
     int func(                                                                  \
         long lb, long ub, long str, long chunk_sz, long *p_lb, long *p_ub)     \
     {                                                                          \
-        int status;                                                            \
+        int status = 0;                                                        \
         long stride;                                                           \
         int gtid = hpx_backend->get_thread_num();                              \
         if ((str > 0) ? (lb < ub) : (lb > ub))                                 \
@@ -315,7 +315,7 @@ xexpand(KMP_API_NAME_GOMP_PARALLEL_END)(void) {
 #define LOOP_RUNTIME_START(func, schedule)                                     \
     int func(long lb, long ub, long str, long *p_lb, long *p_ub)               \
     {                                                                          \
-        int status;                                                            \
+        int status = 0;                                                        \
         long stride;                                                           \
         long chunk_sz = 0;                                                     \
         int gtid = hpx_backend->get_thread_num();                              \
@@ -439,7 +439,7 @@ xexpand(KMP_API_NAME_GOMP_LOOP_END_NOWAIT)(void) {
         unsigned long long str, unsigned long long chunk_sz,                   \
         unsigned long long *p_lb, unsigned long long *p_ub)                    \
     {                                                                          \
-        int status;                                                            \
+        int status = 0;                                                        \
         long long str2 = up ? ((long long) str) : -((long long) str);          \
         long long stride;                                                      \
         int gtid = hpx_backend->get_thread_num();                              \
@@ -466,7 +466,7 @@ xexpand(KMP_API_NAME_GOMP_LOOP_END_NOWAIT)(void) {
         unsigned long long str, unsigned long long *p_lb,                      \
         unsigned long long *p_ub)                                              \
     {                                                                          \
-        int status;                                                            \
+        int status = 0;                                                        \
         long long str2 = up ? ((long long) str) : -((long long) str);          \
         unsigned long long stride;                                             \
         unsigned long long chunk_sz = 0;                                       \
@@ -581,7 +581,8 @@ xexpand(KMP_API_NAME_GOMP_TASK)(void (*func)(void *), void *data, void (*copy_fu
         if (gomp_flags & 8) {
             const size_t ndeps = (kmp_intptr_t) depend[0];
             const size_t nout = (kmp_intptr_t) depend[1];
-            kmp_depend_info_t dep_list[ndeps];
+            vector<kmp_depend_info_t> dep_list;
+            dep_list.reserve(ndeps);
 
             for (size_t i = 0U; i < ndeps; i++) {
                 dep_list[i].base_addr = (kmp_intptr_t) depend[2U + i];
@@ -589,7 +590,7 @@ xexpand(KMP_API_NAME_GOMP_TASK)(void (*func)(void *), void *data, void (*copy_fu
                 dep_list[i].flags.in = 1;
                 dep_list[i].flags.out = (i < nout);
             }
-            __kmpc_omp_task_with_deps(nullptr, gtid, task, ndeps, dep_list, 0, NULL);
+            __kmpc_omp_task_with_deps(nullptr, gtid, task, ndeps, &dep_list[0], 0, NULL);
         } else {
             __kmpc_omp_task(nullptr, gtid, task);
         }
@@ -629,6 +630,7 @@ xexpand(KMP_API_NAME_GOMP_SECTIONS_START)(unsigned count) {
     std::cout << "KMP_API_NAME_GOMP_SECTIONS_START" << std::endl;
 #endif
     HPX_ASSERT(false);
+    return 0;
 }
 
 unsigned

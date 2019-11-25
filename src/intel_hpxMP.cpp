@@ -113,7 +113,7 @@ int __kmpc_omp_task( ident_t *loc_ref, kmp_int32 gtid, kmp_task_t * new_task){
         std::cout<<"__kmpc_omp_task"<<std::endl;
     #endif
     start_backend();
-    intrusive_ptr new_task_ptr(new_task);
+    intrusive_ptr<kmp_task_t> new_task_ptr(new_task);
     hpx_backend->create_task(new_task_ptr->routine, gtid, new_task_ptr);
     return 1;
 }
@@ -1002,4 +1002,11 @@ void omp_unset_nest_lock(omp_lock_t **lock) {
     (*lock)->unlock();
 }
 
+void omp_set_nested(int val){
+    #if defined DEBUG && defined HPXMP_HAVE_TRACE
+        std::cout<<"hpxMP always sets nested to true"<<std::endl;
+    #endif
+    start_backend();
+};
+int omp_get_nested(){return 1;};
 

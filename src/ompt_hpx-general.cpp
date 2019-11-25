@@ -322,7 +322,9 @@ ompt_data_t* __ompt_get_parallel_data_internal()
  ***************************************************************************/
 thread_local ompt_data_t thread_data = ompt_data_none;
 
-void on_thread_start(std::size_t num, char const* name)
+void on_thread_start(std::size_t global_thread_num,
+                     std::size_t /* local_thread_num */, char const* /* pool_name */,
+                     char const* name)
 {
     if (ompt_enabled.enabled)
     {
@@ -338,7 +340,9 @@ void on_thread_start(std::size_t num, char const* name)
     }
 }
 
-void on_thread_stop(std::size_t num, char const* name)
+void on_thread_stop(std::size_t global_thread_num,
+                                        std::size_t /* local_thread_num */, char const* /* pool_name */,
+                                        char const* name)
 {
     if (ompt_enabled.enabled)
     {
