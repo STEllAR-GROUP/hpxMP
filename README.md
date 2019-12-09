@@ -58,4 +58,4 @@ what has been implemented in hpxMP and what needs to be done.
 # Credit
 
 Please cite as
-Jeremy Kemp, Tianyi Zhang, Shahrzad Shirzad, Bryce Adelstein Lelbach aka wash, Hartmut Kaiser, Bibek Wagle, … Alireza Kheirkhahan. (2019, May 9). STEllAR-GROUP/hpxMP: hpxMP v0.2.0: An OpenMP runtime implemented using HPX (Version v0.2.0). Zenodo. http://doi.org/10.5281/zenodo.2693173
+Jeremy Kemp, Tianyi Zhang, Shahrzad Shirzad, Bryce Adelstein Lelbach aka wash, Hartmut Kaiser, Bibek Wagle, … Alireza Kheirkhahan. (2019, November 26). STEllAR-GROUP/hpxMP: hpxMP v0.3.0: An OpenMP runtime implemented using HPX (Version v0.3.0). Zenodo. http://doi.org/10.5281/zenodo.3554559
