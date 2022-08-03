@@ -13,7 +13,6 @@
 // We need to explicitly include the implementations for hpx::start if hpxMP is
 // being compiled as part of HPX itself
 #include <hpx/hpx_start_impl.hpp>
-//#include <hpx/runtime/threads/run_as_hpx_thread.hpp>
 #include <hpx/include/run_as.hpp>
 #include <hpx/threading_base/register_thread.hpp>
 #include <hpx/program_options/options_description.hpp>
@@ -107,13 +106,10 @@ void start_hpx(size_t initial_num_threads)
     std::mutex startup_mtx;
     std::condition_variable cond;//TODO: replace this with something that can be checked later, once hpx is needed.
     bool running = false;
-    //hpx::start(f, desc_cmdline, argc, argv, cfg,
-    //        std::bind(&wait_for_startup, boost::ref(startup_mtx), boost::ref(cond), boost::ref(running)));
 
     hpx::init_params init_args;
     init_args.desc_cmdline = desc_cmdline;
-    hpx::start(f, argc, argv, init_args); //,
-    //        std::bind(&wait_for_startup, boost::ref(startup_mtx), boost::ref(cond), boost::ref(running)));
+    hpx::start(f, argc, argv, init_args);
 
     {
         //std::scoped_lock lk(startup_mtx);
@@ -364,13 +360,9 @@ void hpx_runtime::create_task( kmp_routine_entry_t task_func, int gtid, intrusiv
             current_task_ptr->taskgroupLatch->count_up(1);
         //this fixes hpx::apply changes in hpx backend
         //TPool.enqueue(&task_setup, gtid, kmp_task_ptr, current_task_ptr);
-        //hpx::applier::register_thread_nullary(
 	hpx::threads::thread_init_data tdata ( hpx::threads::make_thread_function_nullary(
             std::bind(&task_setup, gtid, kmp_task_ptr, current_task_ptr) ), "omp_explicit_task" );
 	hpx::threads::register_thread(tdata); 
-        //    ; //,
-        //"omp_explicit_task", hpx::threads::thread_schedule_state::pending, true,
-        //hpx::threads::thread_priority::normal);
 #endif
     }
 //    else {

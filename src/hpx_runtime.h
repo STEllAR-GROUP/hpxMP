@@ -17,11 +17,9 @@
 #include <hpx/hpx_start.hpp>
 #include <hpx/topology/topology.hpp>
 #include <hpx/condition_variable.hpp>
-//#include <hpx/lcos/local/barrier.hpp>
 #include <hpx/type_support/static.hpp>
 #include <hpx/include/lcos.hpp>
 #include <hpx/condition_variable.hpp>
-//#include <hpx/lcos/local/condition_variable.hpp>
 
 #include <hpx/executors/thread_pool_executor.hpp>
 
@@ -32,8 +30,6 @@
 #include <boost/cstdint.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/intrusive_ptr.hpp>
-//#include <boost/thread/mutex.hpp>
-//#include <boost/thread/condition.hpp>
 
 #include <hpx/timing/high_resolution_timer.hpp>
 #include <map>
