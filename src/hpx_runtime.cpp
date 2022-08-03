@@ -1,4 +1,4 @@
-//  Copyright hpx/threading_base(c) 2013 Jeremy Kemp
+//  Copyright (c) 2013 Jeremy Kemp
 //  Copyright (c) 2013 Bryce Adelstein-Lelbach
 //  Copyright (c) 2018 Tianyi Zhang
 //  Copyright (c) 2022 Christopher Taylor
