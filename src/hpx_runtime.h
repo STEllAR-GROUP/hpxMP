@@ -15,18 +15,21 @@
 #include <hpx/hpx.hpp>
 #include <hpx/hpx_start.hpp>
 #include <hpx/topology/topology.hpp>
-#include <hpx/lcos/local/barrier.hpp>
+#include <hpx/condition_variable.hpp>
+//#include <hpx/lcos/local/barrier.hpp>
 #include <hpx/type_support/static.hpp>
 #include <hpx/include/lcos.hpp>
-#include <hpx/lcos/local/condition_variable.hpp>
+#include <hpx/condition_variable.hpp>
+//#include <hpx/lcos/local/condition_variable.hpp>
 
-#include <hpx/parallel/executors/thread_pool_executors.hpp>
+#include <hpx/executors/thread_pool_executor.hpp>
 
 #include <boost/algorithm/string/split.hpp>
 #include <boost/algorithm/string/classification.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/assign/std/vector.hpp>
 #include <boost/cstdint.hpp>
+#include <boost/shared_ptr.hpp>
 #include <boost/intrusive_ptr.hpp>
 //#include <boost/thread/mutex.hpp>
 //#include <boost/thread/condition.hpp>
@@ -42,13 +45,14 @@
 
 using std::atomic;
 using boost::shared_ptr;
-using hpx::threads::executors::local_priority_queue_executor;
+//using hpx::threads::executors::local_priority_queue_executor;
+using hpx::execution::parallel_executor;
 using hpx::lcos::local::barrier;
 using hpx::lcos::local::latch;
-using hpx::lcos::shared_future;
+using hpx::shared_future;
 using hpx::lcos::future;
 using std::vector;
-using hpx::util::high_resolution_timer;
+using hpx::chrono::high_resolution_timer;
 using boost::intrusive_ptr;
 
 
@@ -61,7 +65,8 @@ typedef void (*omp_micro)(int , frame_pointer_t);
 
 typedef void (*omp_task_func)(void *firstprivates, void *fp);
 
-typedef hpx::lcos::local::spinlock mutex_type;
+//typedef hpx::lcos::local::spinlock mutex_type;
+typedef hpx::spinlock mutex_type;
 //typedef hpx::lcos::local::mutex  mutex_type;
 typedef boost::shared_ptr<mutex_type> mtx_ptr;
 
@@ -241,7 +246,8 @@ struct parallel_region {
     ompt_data_t parallel_data = ompt_data_none;
 #endif
 #ifdef OMP_COMPLIANT
-    shared_ptr<local_priority_queue_executor> exec;
+    //shared_ptr<local_priority_queue_executor> exec;
+    shared_ptr<parallel_executor> exec;
 #endif
 };
 
@@ -311,7 +317,8 @@ class omp_task_data {
 #endif
 
 #ifdef OMP_COMPLIANT
-        shared_ptr<local_priority_queue_executor> tg_exec;
+        //shared_ptr<local_priority_queue_executor> tg_exec;
+        shared_ptr<parallel_executor> tg_exec;
 #else
         shared_ptr<hpxmp_latch> taskgroupLatch;
 #endif

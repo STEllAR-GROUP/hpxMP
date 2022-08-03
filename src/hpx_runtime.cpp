@@ -1,4 +1,4 @@
-//  Copyright (c) 2013 Jeremy Kemp
+//  Copyright hpx/threading_base(c) 2013 Jeremy Kemp
 //  Copyright (c) 2013 Bryce Adelstein-Lelbach
 //  Copyright (c) 2018 Tianyi Zhang
 //
@@ -12,7 +12,9 @@
 // We need to explicitly include the implementations for hpx::start if hpxMP is
 // being compiled as part of HPX itself
 #include <hpx/hpx_start_impl.hpp>
-#include <hpx/runtime/threads/run_as_hpx_thread.hpp>
+//#include <hpx/runtime/threads/run_as_hpx_thread.hpp>
+#include <hpx/include/run_as.hpp>
+#include <hpx/threading_base/register_thread.hpp>
 #include <hpx/program_options/options_description.hpp>
 
 using std::cout;
@@ -98,14 +100,19 @@ void start_hpx(size_t initial_num_threads)
 #ifdef OMP_COMPLIANT
     argv[1] = const_cast<char*>("--hpx:queuing=static");
 #endif
-    hpx::util::function_nonser<int(boost::program_options::variables_map& vm)> f;
+    hpx::function<int(hpx::program_options::variables_map& vm)> f;
     hpx::program_options::options_description desc_cmdline;
 
     std::mutex startup_mtx;
     std::condition_variable cond;//TODO: replace this with something that can be checked later, once hpx is needed.
     bool running = false;
-    hpx::start(f, desc_cmdline, argc, argv, cfg,
-            std::bind(&wait_for_startup, boost::ref(startup_mtx), boost::ref(cond), boost::ref(running)));
+    //hpx::start(f, desc_cmdline, argc, argv, cfg,
+    //        std::bind(&wait_for_startup, boost::ref(startup_mtx), boost::ref(cond), boost::ref(running)));
+
+    hpx::init_params init_args;
+    init_args.desc_cmdline = desc_cmdline;
+    hpx::start(f, argc, argv, init_args); //,
+    //        std::bind(&wait_for_startup, boost::ref(startup_mtx), boost::ref(cond), boost::ref(running)));
 
     {
         //std::scoped_lock lk(startup_mtx);
@@ -356,10 +363,13 @@ void hpx_runtime::create_task( kmp_routine_entry_t task_func, int gtid, intrusiv
             current_task_ptr->taskgroupLatch->count_up(1);
         //this fixes hpx::apply changes in hpx backend
         //TPool.enqueue(&task_setup, gtid, kmp_task_ptr, current_task_ptr);
-        hpx::applier::register_thread_nullary(
-            std::bind(&task_setup, gtid, kmp_task_ptr, current_task_ptr),
-            "omp_explicit_task", hpx::threads::pending, true,
-            hpx::threads::thread_priority_normal);
+        //hpx::applier::register_thread_nullary(
+	hpx::threads::thread_init_data tdata ( hpx::threads::make_thread_function_nullary(
+            std::bind(&task_setup, gtid, kmp_task_ptr, current_task_ptr) ), "omp_explicit_task" );
+	hpx::threads::register_thread(tdata); 
+        //    ; //,
+        //"omp_explicit_task", hpx::threads::thread_schedule_state::pending, true,
+        //hpx::threads::thread_priority::normal);
 #endif
     }
 //    else {
@@ -439,17 +449,17 @@ void hpx_runtime::create_df_task( int gtid, kmp_task_t *thunk,
 
         if(task->in_taskgroup) {
             new_task = dataflow( *(task->tg_exec),
-                                 unwrapping(df_tg_task_wrapper), gtid, thunk, task->icv,
+                                 hpx::unwrapping(df_tg_task_wrapper), gtid, thunk, task->icv,
                                  task->tg_exec,
                                  team, hpx::when_all(dep_futures) );
         } else {
             new_task = dataflow( *(team->exec),
-                                 unwrapping(df_task_wrapper), gtid, thunk, task->icv,
+                                 hpx::unwrapping(df_task_wrapper), gtid, thunk, task->icv,
                                  task->num_child_tasks,
                                  team, hpx::when_all(dep_futures) );
         }
 #else
-        new_task = dataflow( unwrapping(df_task_wrapper), gtid, thunk, current_task_ptr, hpx::when_all(dep_futures));
+        new_task = dataflow( hpx::unwrapping(df_task_wrapper), gtid, thunk, current_task_ptr, hpx::when_all(dep_futures));
 #endif
     }
     for(int i = 0 ; i < ndeps; i++) {
@@ -622,12 +632,15 @@ void fork_worker( invoke_func kmp_invoke, microtask_t thread_func,
     }
 #else
     for( int i = 0; i < parent->threads_requested; i++ ) {
-        hpx::applier::register_thread_nullary(
-                std::bind( &thread_setup, kmp_invoke, thread_func, argc, argv, i, &team, parent,
-                           boost::ref(threadLatch)),
-                "omp_implicit_task", hpx::threads::pending,
-                true, hpx::threads::thread_priority_low, i );
-                //true, hpx::threads::thread_priority_normal, i );
+
+        hpx::threads::thread_init_data tdata ( hpx::threads::make_thread_function_nullary(
+            std::bind( &thread_setup, kmp_invoke, thread_func, argc, argv, i, &team, parent,
+                           boost::ref(threadLatch)) ), "omp_implicit_task" ); //,
+	hpx::threads::register_thread(tdata); 
+
+                //"omp_implicit_task", hpx::threads::thread_schedule_state::pending,
+                //true, hpx::threads::thread_priority::low, i );
+                //true, hpx::threads::thread_priority::normal, i );
     }
 #endif
     threadLatch.count_down_and_wait();

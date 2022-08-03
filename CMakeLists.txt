@@ -8,20 +8,40 @@ PROJECT(HPXMP CXX ASM)
 
 cmake_minimum_required(VERSION 2.8)
 
-set(hpxmp_sources
-        src/asm_functions.s
-        src/intel_hpxMP.cpp
-        src/hpx_runtime.cpp
-        src/kmp_atomic.cpp
-        src/loop_schedule.cpp
-        src/gcc_hpxMP.cpp)
+execute_process(COMMAND gcc -dumpmachine OUTPUT_STRIP_TRAILING_WHITESPACE OUTPUT_VARIABLE ARCH)
 
-set(hpxmp_headers
-        src/intel_hpxMP.h
-        src/hpx_runtime.h
-        src/kmp_atomic.h
-        src/loop_schedule.h
-        src/gcc_hpxMP.h)
+if(ARCH STREQUAL "riscv64-linux-gnu")
+    set(hpxmp_sources
+            src/riscv64_asm_functions.s
+            src/intel_hpxMP.cpp
+            src/hpx_runtime.cpp
+            src/kmp_atomic.cpp
+            src/loop_schedule.cpp
+            src/gcc_hpxMP.cpp)
+
+    set(hpxmp_headers
+            src/intel_hpxMP.h
+            src/hpx_runtime.h
+            src/kmp_atomic.h
+            src/loop_schedule.h
+            src/gcc_hpxMP.h)
+
+else()
+    set(hpxmp_sources
+            src/asm_functions.s
+            src/intel_hpxMP.cpp
+            src/hpx_runtime.cpp
+            src/kmp_atomic.cpp
+            src/loop_schedule.cpp
+            src/gcc_hpxMP.cpp)
+
+    set(hpxmp_headers
+            src/intel_hpxMP.h
+            src/hpx_runtime.h
+            src/kmp_atomic.h
+            src/loop_schedule.h
+            src/gcc_hpxMP.h)
+endif()
 
 set(HPXMP_WITH_TRACE OFF CACHE BOOL "display traces in debug mode")
 if(HPXMP_WITH_TRACE)
