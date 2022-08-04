@@ -16,6 +16,7 @@ enable_testing()
 macro(do_test name)
     add_test(${name} ${name})
     set_target_properties(${name} PROPERTIES
+	    LINKER_LANGUAGE CXX
             CXX_STANDARD 11
             CXX_STANDARD_REQUIRED ON
             CXX_EXTENSIONS OFF

@@ -1,4 +1,5 @@
 // Copyright (c) 2018 Tianyi Zhang
+// Copyright (c) 2022 Christopher Taylor
 //
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
@@ -11,7 +12,7 @@
 #include <boost/shared_ptr.hpp>
 #include <iostream>
 #include <assert.h>
-#include <hpx/assertion.hpp>
+#include <hpx/assert.hpp>
 
 extern boost::shared_ptr<hpx_runtime> hpx_backend;
 

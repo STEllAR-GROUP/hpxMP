@@ -98,7 +98,11 @@ typedef unsigned long kmp_uintptr_t;
       128-bit extended precision type yet */
    typedef long double _Quad;
 #elif KMP_COMPILER_GCC
+#ifdef __riscv
+   typedef _Float128 _Quad;
+#else
    typedef __float128 _Quad;
+#endif
 #  undef  KMP_HAVE_QUAD
 #  define KMP_HAVE_QUAD 1
 #elif KMP_COMPILER_MSVC
@@ -106,6 +110,11 @@ typedef unsigned long kmp_uintptr_t;
 #endif
 
 # define KMP_ARCH_X86 0
+
+#ifdef __riscv
+#undef KMP_HAVE_QUAD
+#define KMP_HAVE_QUAD 0
+#endif
 
 //Is not set. When/why would I need it?
 #ifdef USE_VOLATILE_CAST
@@ -190,7 +199,7 @@ extern "C" {
     // Atomic locks can easily become contended, so we use queuing locks for them.
      
     //typedef kmp_queuing_lock_t kmp_atomic_lock_t;
-    typedef hpx::lcos::local::spinlock kmp_atomic_lock_t;
+    typedef hpx::spinlock kmp_atomic_lock_t; //hpx::lcos::local::spinlock kmp_atomic_lock_t;
 
     //typedef boost::shared_ptr<mutex_type> mtx_ptr;
     

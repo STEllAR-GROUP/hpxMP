@@ -8,8 +8,16 @@ PROJECT(HPXMP CXX ASM)
 
 cmake_minimum_required(VERSION 2.8)
 
+execute_process(COMMAND gcc -dumpmachine OUTPUT_STRIP_TRAILING_WHITESPACE OUTPUT_VARIABLE ARCH)
+
+if(${ARCH} STREQUAL "riscv64-linux-gnu")
+    set(ASM_SOURCE_FILE src/riscv64_asm_functions.s)
+else()
+    set(ASM_SOURCE_FILE src/asm_functions.s)
+endif()
+
 set(hpxmp_sources
-        src/asm_functions.s
+	${ASM_SOURCE_FILE}
         src/intel_hpxMP.cpp
         src/hpx_runtime.cpp
         src/kmp_atomic.cpp

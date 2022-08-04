@@ -4,6 +4,7 @@
 # file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fopenmp")
+
 set(examples
         omp-barrier
         omp-for
@@ -30,7 +31,15 @@ set(examples
         #task_spawn_time
         )
 
+
 foreach(example ${examples})
-    set(sources ${example}.c)
-    add_executable(${example} ${sources})
+    project(${example})
+    set(SOURCE_FILES ./${example}.c)
+    add_executable(${example} ${SOURCE_FILES})
+    set_target_properties(${example} PROPERTIES LINKER_LANGUAGE CXX)
 endforeach()
+
+#project(omp-for)
+#set(SOURCE_FILES ./omp-for.c)
+#add_executable(omp-for ${SOURCE_FILES})
+#set_target_properties(omp-for PROPERTIES LINKER_LANGUAGE CXX)
